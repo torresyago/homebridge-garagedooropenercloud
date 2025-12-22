@@ -19,19 +19,17 @@ Fork mejorado de [jmaferreira/homebridge-garage-door-shelly1](https://github.com
 
 npm install -g torresyago/homebridge-garagedooropenercloud
 
-text
-
 ## ⚙️ Configuración
 
   {
     "accessory": "GarageDoorOpenerCloud",
-    "name": "Garaje Casa",
-    "deviceId": "XXXXXXXXXXXX",
-    "authKey": "YYYYYYYYYYYY",
+    "name": "puerta2nueva",
+    "deviceId": "euuddd8",
+    "authKey": "MTAxxxxxx",
     "channel": "0",
     "cloudBaseURL": "https://shelly-38-eu.shelly.cloud/device/relay/control",
     "statusCloudURL": "https://shelly-38-eu.shelly.cloud/device/status",
-    "statusKey": "$.data[\"input:0\"].state",
+    "statusKey": "$.data.device_status.relays[0].ison",
     "statusValueOpen": "false",
     "statusValueClosed": "true",
     "openTime": 10,
