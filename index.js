@@ -9,7 +9,7 @@ module.exports = function(homebridge) {
     homebridge.registerAccessory(
         "homebridge-garagedooropenercloud",
         "GarageDoorOpenerCloud",
-        GarageDoorOpenerCloudAccessory
+        GarageDoorOpener
     );
 };
 
