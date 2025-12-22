@@ -1,0 +1,36 @@
+{
+  "name": "homebridge-garagedooropenercloud",
+  "version": "1.2.0",
+  "description": "Homebridge plugin for garage door opener using Shelly Cloud API",
+  "main": "index.js",
+  "engines": {
+    "homebridge": ">=0.4.50",
+    "node": ">=12.13.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yago/homebridge-garagedooropenercloud"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "homebridge",
+    "garage",
+    "garagedoor",
+    "shelly",
+    "shelly-cloud",
+    "cloud"
+  ],
+  "author": "yago",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yago/homebridge-garagedooropenercloud/issues"
+  },
+  "homepage": "https://github.com/yago/homebridge-garagedooropenercloud#readme",
+  "dependencies": {
+    "jsonpath": "^1.0.2",
+    "request": "^2.88.2"
+  }
+}
