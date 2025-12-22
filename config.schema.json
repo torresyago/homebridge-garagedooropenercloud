@@ -18,7 +18,7 @@
         "description": "Device ID from Shelly App → Settings → Cloud → Advanced"
       },
       "authKey": {
-        "title": "Shelly Auth Key", 
+        "title": "Shelly Auth Key",
         "type": "string",
         "required": true,
         "description": "Auth Key from Shelly App → Profile"
@@ -37,19 +37,14 @@
       },
       "statusCloudURL": {
         "title": "Cloud Status URL",
-        "type": "string", 
+        "type": "string",
         "default": "https://shelly-38-eu.shelly.cloud/device/status",
         "description": "Shelly Cloud status endpoint"
       },
-              "statusKey": {
-          "title": "Status Key",
-          "type": "string",
-          "default": "$.data["input:0"].state",
-          "description": "JSONPath for door sensor"
-        },
+      "statusKey": {
         "title": "Status Key",
         "type": "string",
-        "default": "$..["input:0"].state
+        "default": "$.data[\"input:0\"].state",
         "description": "JSONPath for door sensor (input:0.state for Shelly)"
       },
       "statusValueOpen": {
@@ -60,7 +55,7 @@
       },
       "statusValueClosed": {
         "title": "Closed Status Value",
-        "type": "string", 
+        "type": "string",
         "default": "true",
         "description": "Sensor value when door is CLOSED"
       },
