@@ -23,21 +23,25 @@ text
 
 ## ⚙️ Configuración
 
-{
-"accessory": "GarageDoorOpener",
-"name": "Garage Door",
-"plugin": "homebridge-garagedooropenercloud",
-"deviceId": "441793a44db8",
-"authKey": "MTAzNDxxxxx",
-"channel": "0",
-"openTime": 20,
-"closeTime": 20,
-"polling": true,
-"pollInterval": 30,
-"debug": true
-}
-
-text
+  {
+    "accessory": "GarageDoorOpenerCloud",
+    "name": "Garaje Casa",
+    "deviceId": "XXXXXXXXXXXX",
+    "authKey": "YYYYYYYYYYYY",
+    "channel": "0",
+    "cloudBaseURL": "https://shelly-38-eu.shelly.cloud/device/relay/control",
+    "statusCloudURL": "https://shelly-38-eu.shelly.cloud/device/status",
+    "statusKey": "$.data[\"input:0\"].state",
+    "statusValueOpen": "false",
+    "statusValueClosed": "true",
+    "openTime": 10,
+    "closeTime": 10,
+    "polling": true,
+    "pollInterval": 30,
+    "debug": false,
+    "manufacturer": "yago",
+    "model": "GarageDoorOpenerCloud"
+  }
 
 ### 📱 Credenciales Shelly Cloud
 
@@ -57,18 +61,6 @@ text
 | `pollInterval` | Segundos polling | `30` |
 | `debug` | Logs detallados | `false` |
 
-## 🔌 Cableado Shelly 1PM
-
-Pulsador garaje:
-├── L → Fase pulsador
-├── N → Neutro
-└── O → Pulsador (Relay)
-
-Sensor reed (SW + L):
-├── SW → Terminal reed
-└── L → Terminal reed
-
-text
 
 ## 🎯 Funcionamiento
 
@@ -77,7 +69,6 @@ Estado → POST /device/status → input:0.state
 false → 🚪 ABIERTA
 true → 🚪 CERRADA
 
-text
 
 ## 🏠 Estados HomeKit
 

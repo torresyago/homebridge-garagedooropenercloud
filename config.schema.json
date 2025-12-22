@@ -44,7 +44,7 @@
       "statusKey": {
         "title": "Status Key",
         "type": "string",
-        "default": "$.data[\"input:0\"].state",
+        "default": "$.data.device_status.relays[0].ison",       
         "description": "JSONPath for door sensor (input:0.state for Shelly)"
       },
       "statusValueOpen": {
