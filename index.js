@@ -8,8 +8,8 @@ module.exports = function(homebridge) {
     Characteristic = homebridge.hap.Characteristic;
     homebridge.registerAccessory(
         "homebridge-garagedooropenercloud",
-        "GarageDoorOpener",
-        GarageDoorOpener
+        "GarageDoorOpenerCloud",
+        GarageDoorOpenerCloudAccessory
     );
 };
 
