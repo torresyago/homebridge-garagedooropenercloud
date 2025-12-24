@@ -109,92 +109,41 @@ GarageDoorOpener.prototype = {
         });
     },
     
-        if (err) {
-            callback(err);
-            return;
-        }
-
-        try {
-            const json = JSON.parse(body);
-            if (this.debug) {
-                this.log("[%s] FULL JSON: %j", this.name, json);
+    getStatus: function(callback) {
+        const statusData = {
+            channel: this.channel,
+            id: this.deviceId,
+            auth_key: this.authKey
+        };
+        
+        request.post({
+            url: this.statusCloudURL,
+            form: statusData
+        }, (err, response, body) => {
+            if (err) {
+                callback(err);
+                return;
             }
-
-            const ds = json?.data?.device_status;
-            let status = false; // Default CERRADA
-
-            // PRIORIDAD 1: Sensor input (Rincón/Mauleón)
-            if (ds?.["input:0"]?.state !== undefined) {
-                status = ds["input:0"].state;
-                this.log("[%s] Using input:0.state: %s", this.name, status);
-            } 
-            // PRIORIDAD 2: Relay clásico (puerta2nueva) 
-            else if (ds?.relays?.[0]?.ison !== undefined) {
-                status = ds.relays[0].ison;
-                this.log("[%s] Using relays[0].ison: %s", this.name, status);
-            } 
-            // PRIORIDAD 3: Switch Plus relay
-            else if (ds?.["switch:0"]?.output !== undefined) {
-                status = ds["switch:0"].output;
-                this.log("[%s] Using switch:0.output: %s", this.name, status);
+            
+            try {
+                const json = JSON.parse(body);
+                if (this.debug) {
+                    this.log("[%s] FULL JSON: %j", this.name, json);
+                }
+                
+                const rawStatus = json.data.device_status.relays[0]?.ison ?? false;
+                const status = rawStatus;
+                this.log("[%s] RAW RELAY: %s", this.name, status);
+                
+                callback(null, status);
+            } catch (parseErr) {
+                this.log("[%s] Error parsing status JSON: %s", this.name, parseErr.message);
+                callback(parseErr);
             }
-
-            this.log("[%s] FINAL STATUS: %s", this.name, status);
-            callback(null, status);
-        } catch (parseErr) {
-            this.log("[%s] Error parsing status JSON: %s", this.name, parseErr.message);
-            callback(parseErr);
-        }
-    });
-},
- 
+        });
+    },
     
-getStatus: function(callback) {
-    const statusData = {
-        channel: this.channel,
-        id: this.deviceId,
-        auth_key: this.authKey
-    };
-
-    request.post({
-        url: this.statusCloudURL,
-        form: statusData
-    }, (err, response, body) => {
-        if (err) {
-            callback(err);
-            return;
-        }
-
-        try {
-            const json = JSON.parse(body);
-            if (this.debug) {
-                this.log("[%s] FULL JSON: %j", this.name, json);
-            }
-
-            const ds = json?.data?.device_status;
-            let status = false;
-
-            if (ds && ds["input:0"] && ds["input:0"].state !== undefined) {
-                status = ds["input:0"].state;
-                this.log("[%s] Using input:0.state: %s", this.name, status);
-            } else if (ds && ds.relays && ds.relays[0] && ds.relays[0].ison !== undefined) {
-                status = ds.relays[0].ison;
-                this.log("[%s] Using relays[0].ison: %s", this.name, status);
-            } else if (ds && ds["switch:0"] && ds["switch:0"].output !== undefined) {
-                status = ds["switch:0"].output;
-                this.log("[%s] Using switch:0.output: %s", this.name, status);
-            }
-
-            this.log("[%s] FINAL STATUS: %s", this.name, status);
-            callback(null, status);
-        } catch (parseErr) {
-            this.log("[%s] Error parsing status JSON: %s", this.name, parseErr.message);
-            callback(parseErr);
-        }
-    });
-},
-
-pollStatus: function() {
+    pollStatus: function() {
         if (this.debug) {
             this.log("[%s] Getting status: %s channel=%s&id=%s&auth_key=...", 
                 this.name, this.statusCloudURL, this.channel, this.deviceId);
