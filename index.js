@@ -1,7 +1,6 @@
 var Service, Characteristic;
 const packageJson = require("./package.json");
 const request = require("request");
-const jp = require("jsonpath");
 
 module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
@@ -20,23 +19,20 @@ function GarageDoorOpener(log, config) {
     this.deviceId = config.deviceId;
     this.authKey = config.authKey;
     this.channel = config.channel || 0;
-    this.statusKey = config.statusKey || "$.data.device_status.relays[0].ison";
-    this.statusValueOpen = config.statusValueOpen !== undefined ? config.statusValueOpen : true;
-    this.statusValueClosed = config.statusValueClosed !== undefined ? config.statusValueClosed : false;
     this.openTime = config.openTime || 20;
     this.closeTime = config.closeTime || 20;
     this.polling = config.polling !== false;
     this.debug = config.debug !== false;
 
-    this.statusCloudURL = "https://shelly-38-eu.shelly.cloud/device/status";
-    this.controlCloudURL = "https://shelly-38-eu.shelly.cloud/device/relay/control";
+    this.statusCloudURL = config.statusCloudURL || "https://shelly-38-eu.shelly.cloud/device/status";
+    this.controlCloudURL = config.cloudBaseURL || "https://shelly-38-eu.shelly.cloud/device/relay/control";
 
     this.service = new Service.GarageDoorOpener(this.name);
     this.informationService = new Service.AccessoryInformation();
 
     this.informationService
-        .setCharacteristic(Characteristic.Manufacturer, "Shelly Cloud")
-        .setCharacteristic(Characteristic.Model, "Garage Door Opener")
+        .setCharacteristic(Characteristic.Manufacturer, config.manufacturer || "Shelly Cloud")
+        .setCharacteristic(Characteristic.Model, config.model || "Garage Door Opener")
         .setCharacteristic(Characteristic.SerialNumber, this.deviceId);
 
     this.service
@@ -48,7 +44,7 @@ function GarageDoorOpener(log, config) {
         .on('get', this.getCurrentState.bind(this));
 
     if (this.polling) {
-        setInterval(this.pollStatus.bind(this), 30000);
+        setInterval(this.pollStatus.bind(this), (config.pollInterval || 30) * 1000);
         this.pollStatus();
     }
 
@@ -79,7 +75,6 @@ GarageDoorOpener.prototype = {
                 callback(err);
                 return;
             }
-
             this.log("[%s] Toggle command sent", this.name);
             callback(null);
         });
@@ -104,7 +99,6 @@ GarageDoorOpener.prototype = {
                 currentState = Characteristic.CurrentDoorState.STOPPED;
                 this.log("[%s] Status: %s -> HomeKit: STOPPED (4)", this.name, status);
             }
-
             callback(null, currentState);
         });
     },
@@ -131,8 +125,8 @@ GarageDoorOpener.prototype = {
                     this.log("[%s] FULL JSON: %j", this.name, json);
                 }
 
-                // *** FIX UNIVERSAL - Soporta TODOS los Shelly ***
-                const ds = json ? json.data ? json.data.device_status : null : null;
+                // UNIVERSAL SHELLY - Detecta automáticamente
+                const ds = json && json.data && json.data.device_status ? json.data.device_status : null;
                 let status = false;
 
                 if (ds && ds['input:0'] && ds['input:0'].state !== undefined) {
@@ -158,10 +152,8 @@ GarageDoorOpener.prototype = {
 
     pollStatus: function() {
         if (this.debug) {
-            this.log("[%s] Getting status: %s channel=%s&id=%s&auth_key=...", 
-                this.name, this.statusCloudURL, this.channel, this.deviceId);
+            this.log("[%s] Getting status...", this.name);
         }
-
         this.getStatus((err, status) => {
             if (!err && status !== undefined) {
                 const currentState = status === true ? Characteristic.CurrentDoorState.OPEN : Characteristic.CurrentDoorState.CLOSED;
@@ -176,4 +168,3 @@ GarageDoorOpener.prototype = {
         });
     }
 };
-
