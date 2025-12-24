@@ -148,6 +148,7 @@ GarageDoorOpener.prototype = {
     });
 },
  
+    
 getStatus: function(callback) {
     const statusData = {
         channel: this.channel,
@@ -173,13 +174,13 @@ getStatus: function(callback) {
             const ds = json?.data?.device_status;
             let status = false;
 
-            if (ds?.["input:0"]?.state !== undefined) {
+            if (ds && ds["input:0"] && ds["input:0"].state !== undefined) {
                 status = ds["input:0"].state;
                 this.log("[%s] Using input:0.state: %s", this.name, status);
-            } else if (ds?.relays?.[0]?.ison !== undefined) {
+            } else if (ds && ds.relays && ds.relays[0] && ds.relays[0].ison !== undefined) {
                 status = ds.relays[0].ison;
                 this.log("[%s] Using relays[0].ison: %s", this.name, status);
-            } else if (ds?.["switch:0"]?.output !== undefined) {
+            } else if (ds && ds["switch:0"] && ds["switch:0"].output !== undefined) {
                 status = ds["switch:0"].output;
                 this.log("[%s] Using switch:0.output: %s", this.name, status);
             }
@@ -192,7 +193,8 @@ getStatus: function(callback) {
         }
     });
 },
-    pollStatus: function() {
+
+pollStatus: function() {
         if (this.debug) {
             this.log("[%s] Getting status: %s channel=%s&id=%s&auth_key=...", 
                 this.name, this.statusCloudURL, this.channel, this.deviceId);
