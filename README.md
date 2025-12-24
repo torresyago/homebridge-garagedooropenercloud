@@ -1,90 +1,86 @@
-# homebridge-garagedooropenercloud
+# Homebridge GarageDoorOpenerCloud
 
-[![npm](https://img.shields.io/npm/v/homebridge-garagedooropenercloud.svg)](https://www.npmjs.com/package/homebridge-garagedooropenercloud)
-[![GitHub stars](https://img.shields.io/github/stars/torresyago/homebridge-garagedooropenercloud.svg)](https://github.com/torresyago/homebridge-garagedooropenercloud)
+[![npm version](https://badge.fury.io/js/homebridge-garagedooropenercloud.svg)](https://www.npmjs.com/package/homebridge-garagedooropenercloud)
 
-**Homebridge plugin para abrir/cerrar garaje usando Shelly Cloud API** 🚪☁️
+Homebridge plugin para controlar puertas de garaje vía Shelly Cloud API. Soporta todos los modelos Shelly automáticamente.
 
-## Descripción
+## ✨ Características
+- Toggle relay desde HomeKit (Abrir/Cerrar)
+- Polling automático (cada 30s)
+- Soporte universal: Gen1 (relays), Plus/Gen2 (input:0), Gen3
+- Config UI X con dropdown Device Type
+- Logs detallados para debug
 
-Fork mejorado de [jmaferreira/homebridge-garage-door-shelly1](https://github.com/jmaferreira/homebridge-garage-door-shelly1)
-
-**Novedades:**
-- ✅ Control remoto vía Shelly Cloud (**sin IP local**)
-- ✅ Polling de estado real vía Cloud API  
-- ✅ Sensor de puerta integrado (reed switch)
-- ✅ Compatible Homebridge Config UI X
+## 📱 Demo Home App
+Garage Door 1 → CERRADA (relay OFF)  
+Garage Door 2 → ABIERTA (sensor false)  
+Garage Door 3 → CERRADA (sensor null)
 
 ## 🔧 Instalación
+npm install -g homebridge-garagedooropenercloud
 
-npm install -g torresyago/homebridge-garagedooropenercloud
+## ⚙️ Configuración (Config UI X)
 
-## ⚙️ Configuración
+### 1. Determina tu Device Type
+curl -s -X POST "https://shelly-38-eu.shelly.cloud/device/status" -d "channel=0&id=TU_DEVICE_ID&auth_key=TU_AUTH_KEY" | jq '.data.device_status | keys | join(", ")'
 
-  {
-    "accessory": "GarageDoorOpenerCloud",
-    "name": "puerta2nueva",
-    "deviceId": "euuddd8",
-    "authKey": "MTAxxxxxx",
-    "channel": "0",
-    "cloudBaseURL": "https://shelly-38-eu.shelly.cloud/device/relay/control",
-    "statusCloudURL": "https://shelly-38-eu.shelly.cloud/device/status",
-    "statusKey": "$.data.device_status.relays[0].ison",
-    "statusValueOpen": "false",
-    "statusValueClosed": "true",
-    "openTime": 10,
-    "closeTime": 10,
+**Resultados:**
+- `relays` → deviceType: "relay" (Gen1, Shelly 1/1PM)
+- `input:0, switch:0` → deviceType: "sensor" (Plus/Gen2, Shelly Plus 1)
+
+### 2. Configuración ejemplo
+{
+    "name": "Garage Door 1",
+    "deviceId": "e868e7d2b238",
+    "authKey": "MTAzNDEydWlk...",
+    "deviceType": "relay",
+    "channel": 0,
     "polling": true,
-    "pollInterval": 30,
-    "debug": false,
-    "manufacturer": "yago",
-    "model": "GarageDoorOpenerCloud"
-  }
+    "debug": true
+}
 
-### 📱 Credenciales Shelly Cloud
+{
+    "name": "Garage Door 2", 
+    "deviceId": "441793a44db8",
+    "authKey": "MTAzNDEydWlk...",
+    "deviceType": "sensor",
+    "channel": 0,
+    "polling": true,
+    "debug": true
+}
 
-1. **App Shelly** → Dispositivo → **Settings** → **Cloud** → **Device ID**
-2. **App Shelly** → **Perfil** → **Auth Key**
+### Campos obligatorios
+- name: Nombre en Home App → "Garage Door"
+- deviceId: ID del Shelly (minúsculas) → "e868e7d2b238"
+- authKey: Clave Shelly Cloud → "MTAzNDEydWlk..."
+- deviceType: "relay" o "sensor"
 
-## 📋 Opciones completas
+## 📡 Cómo obtener Device ID y Auth Key
+1. Shelly App → Tu dispositivo → Device Info
+2. Device ID: e868e7d2b238 (sin guiones)
+3. Auth Key: MTAzNDEydWlkBAAEEB9DCABD3... (copia completa)
 
-| Parámetro | Descripción | Por defecto |
-|-----------|-------------|-------------|
-| `deviceId` | **ID dispositivo** | **Obligatorio** |
-| `authKey` | **Auth Key** | **Obligatorio** |
-| `channel` | Canal relay | `0` |
-| `openTime` | Segundos apertura | `10` |
-| `closeTime` | Segundos cierre | `10` |
-| `polling` | Polling activo | `false` |
-| `pollInterval` | Segundos polling | `30` |
-| `debug` | Logs detallados | `false` |
+## 🐛 Logs de éxito
+[Garage Door 1] Relay relays[0].ison: false → Status: false -> HomeKit: CLOSED (1)  
+[Garage Door 2] Sensor input:0.state: false → Status: false -> HomeKit: OPEN (0)
 
+## 🚀 Desarrollo rápido
+cd ~/github/homebridge-garagedooropenercloud
+npm install -g .
+docker restart homebridge
+docker logs homebridge -f | grep "Garage Door"
 
-## 🎯 Funcionamiento
+## 📖 Lógica de estados
+| Device Type | false/off | true/on | HomeKit |
+|-------------|-----------|---------|---------|
+| relay       | Relay OFF | Relay ON| CLOSED→OPEN |
+| sensor      | Sensor OFF| Sensor ON| OPEN→CLOSED |
 
-Abrir/Cerrar → POST /relay/control?turn=on
-Estado → POST /device/status → input:0.state
-false → 🚪 ABIERTA
-true → 🚪 CERRADA
+## 🔗 Enlaces útiles
+- [Shelly Cloud API](https://shelly-api-docs.shelly.cloud/)
+- [Homebridge Config UI X](https://github.com/homebridge/homebridge-config-ui-x)
 
+## 🙌 Contribuidores
+**Yago** - Desarrollador principal 🇪🇸
 
-## 🏠 Estados HomeKit
-
-| Estado HomeKit | Valor | Sensor |
-|----------------|-------|--------|
-| **Abierta** | `0` | `false` |
-| **Cerrada** | `1` | `true` |
-| **Abriendo** | `2` | Simulado |
-| **Cerrando** | `3` | Simulado |
-
-## 👨‍💻 Autor
-
-**torresyago** - [GitHub](https://github.com/torresyago)
-
-**Basado en:**
-- [jmaferreira/homebridge-garage-door-shelly1](https://github.com/jmaferreira/homebridge-garage-door-shelly1)
-- [andreaseu/homebridge-garage-remote-http](https://github.com/andreaseu/homebridge-garage-remote-http)
-
-## 📄 Licencia
-
-MIT License
+**¡Múltiples puertas funcionando simultáneamente!** 🚪🚪🚪✨
