@@ -109,39 +109,40 @@ GarageDoorOpener.prototype = {
         });
     },
     
-   getStatus: function(callback) {
-    const statusData = {
-        channel: this.channel,
-        id: this.deviceId,
-        auth_key: this.authKey
-    };
-
-    request.post({
-        url: this.statusCloudURL,
-        form: statusData
-    }, (err, response, body) => {
-        if (err) {
-            callback(err);
-            return;
-        }
-
-        try {
-            const json = JSON.parse(body);
-            if (this.debug) {
-                this.log("[%s] FULL JSON: %j", this.name, json);
+    getStatus: function(callback) {
+        const statusData = {
+            channel: this.channel,
+            id: this.deviceId,
+            auth_key: this.authKey
+        };
+        
+        request.post({
+            url: this.statusCloudURL,
+            form: statusData
+        }, (err, response, body) => {
+            if (err) {
+                callback(err);
+                return;
             }
-
-            // FIX: Acceso directo seguro - NUNCA falla
-            const status = json?.data?.device_status?.relays?.[0]?.ison ?? false;
-            this.log("[%s] RAW RELAY: %s", this.name, status);
-            callback(null, status);
-        } catch (parseErr) {
-            this.log("[%s] Error parsing status JSON: %s", this.name, parseErr.message);
-            callback(parseErr);
-        }
-    });
-},
- 
+            
+            try {
+                const json = JSON.parse(body);
+                if (this.debug) {
+                    this.log("[%s] FULL JSON: %j", this.name, json);
+                }
+                
+                const rawStatus = json.data.device_status.relays[0]?.ison ?? false;
+                const status = rawStatus;
+                this.log("[%s] RAW RELAY: %s", this.name, status);
+                
+                callback(null, status);
+            } catch (parseErr) {
+                this.log("[%s] Error parsing status JSON: %s", this.name, parseErr.message);
+                callback(parseErr);
+            }
+        });
+    },
+    
     pollStatus: function() {
         if (this.debug) {
             this.log("[%s] Getting status: %s channel=%s&id=%s&auth_key=...", 
