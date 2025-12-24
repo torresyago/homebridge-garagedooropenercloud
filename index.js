@@ -109,7 +109,7 @@ GarageDoorOpener.prototype = {
         });
     },
     
-   getStatus: function(callback) {
+getStatus: function(callback) {
     const statusData = {
         channel: this.channel,
         id: this.deviceId,
@@ -131,9 +131,26 @@ GarageDoorOpener.prototype = {
                 this.log("[%s] FULL JSON: %j", this.name, json);
             }
 
-            // FIX: Acceso directo seguro - NUNCA falla
-            const status = json?.data?.device_status?.relays?.[0]?.ison ?? false;
-            this.log("[%s] RAW RELAY: %s", this.name, status);
+            const ds = json?.data?.device_status;
+            let status = false; // Default CERRADA
+
+            // PRIORIDAD 1: Sensor input (Rincón/Mauleón)
+            if (ds?.["input:0"]?.state !== undefined) {
+                status = ds["input:0"].state;
+                this.log("[%s] Using input:0.state: %s", this.name, status);
+            } 
+            // PRIORIDAD 2: Relay clásico (puerta2nueva) 
+            else if (ds?.relays?.[0]?.ison !== undefined) {
+                status = ds.relays[0].ison;
+                this.log("[%s] Using relays[0].ison: %s", this.name, status);
+            } 
+            // PRIORIDAD 3: Switch Plus relay
+            else if (ds?.["switch:0"]?.output !== undefined) {
+                status = ds["switch:0"].output;
+                this.log("[%s] Using switch:0.output: %s", this.name, status);
+            }
+
+            this.log("[%s] FINAL STATUS: %s", this.name, status);
             callback(null, status);
         } catch (parseErr) {
             this.log("[%s] Error parsing status JSON: %s", this.name, parseErr.message);
