@@ -1,68 +1,83 @@
+
 {
-    "name": "Shelly Garage Door Opener Cloud",
-    "domain": "homebridge-garagedooropenercloud",
-    "exclusive": true,
-    "type": "object",
-    "properties": {
-        "name": {
-            "title": "Name",
-            "required": true,
-            "type": "string",
-            "default": "Garage Door"
-        },
-        "deviceId": {
-            "title": "Shelly Device ID",
-            "required": true,
-            "type": "string",
-            "placeholder": "e868e7d2b238"
-        },
-        "authKey": {
-            "title": "Shelly Auth Key",
-            "required": true,
-            "type": "string",
-            "placeholder": "MTAzNDEydWlk...",
-            "format": "password"
-        },
-        "deviceType": {
-            "title": "Device Type",
-            "type": "string",
-            "required": true,
-            "oneOf": [
-                { "title": "Relay (Gen1 - relays[0].ison)", "const": "relay" },
-                { "title": "Sensor (Plus/Gen2 - input:0.state)", "const": "sensor" }
-            ],
-            "default": "relay"
-        },
-        "channel": {
-            "title": "Channel",
-            "type": "number",
-            "default": 0
-        },
-        "openTime": {
-            "title": "Open Time (seconds)",
-            "type": "number",
-            "default": 20
-        },
-        "closeTime": {
-            "title": "Close Time (seconds)", 
-            "type": "number",
-            "default": 20
-        },
-        "polling": {
-            "title": "Polling Enabled",
-            "type": "boolean",
-            "default": true
-        },
-        "pollInterval": {
-            "title": "Poll Interval (seconds)",
-            "type": "number",
-            "default": 30,
-            "minimum": 10
-        },
-        "debug": {
-            "title": "Debug Mode",
-            "type": "boolean",
-            "default": false
-        }
+  "name": "Shelly Garage Door Opener Cloud",
+  "domain": "homebridge-garagedooropenercloud",
+  "exclusive": true,
+  "type": "object",
+  "properties": {
+    "name": {
+      "title": "Nombre",
+      "type": "string",
+      "required": true,
+      "default": "Garage Door"
+    },
+    "deviceId": {
+      "title": "Shelly Device ID",
+      "type": "string",
+      "required": true,
+      "placeholder": "e868e7d2b238"
+    },
+    "authKey": {
+      "title": "Shelly Auth Key",
+      "type": "string",
+      "required": true,
+      "placeholder": "MTAzNDEydWlk...",
+      "format": "password"
+    },
+    "deviceType": {
+      "title": "Tipo de dispositivo",
+      "type": "string",
+      "required": true,
+      "enum": ["relay", "sensor"],
+      "default": "relay"
+    },
+    "channel": {
+      "title": "Canal",
+      "type": "number",
+      "default": 0,
+      "minimum": 0
+    },
+    "openTime": {
+      "title": "Tiempo de apertura (segundos)",
+      "type": "number",
+      "default": 20,
+      "minimum": 1,
+      "maximum": 120
+    },
+    "closeTime": {
+      "title": "Tiempo de cierre (segundos)",
+      "type": "number",
+      "default": 20,
+      "minimum": 1,
+      "maximum": 120
+    },
+    "polling": {
+      "title": "Polling activado",
+      "type": "boolean",
+      "default": true
+    },
+    "pollInterval": {
+      "title": "Intervalo de polling (segundos)",
+      "type": "number",
+      "default": 30,
+      "minimum": 10,
+      "maximum": 300
+    },
+    "debug": {
+      "title": "Modo debug",
+      "type": "boolean",
+      "default": false
+    },
+    "statusCloudURL": {
+      "title": "URL de estado Shelly Cloud (opcional)",
+      "type": "string",
+      "required": false
+    },
+    "controlCloudURL": {
+      "title": "URL de control Shelly Cloud (opcional)",
+      "type": "string",
+      "required": false
     }
+  }
 }
+
