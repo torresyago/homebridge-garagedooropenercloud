@@ -1,15 +1,10 @@
 
-// index.js — Homebridge Garage Door Opener Cloud (CommonJS)
-// Compatible con Node >= 18 (fetch nativo). En Node < 18 hace dynamic import de node-fetch.
-// Publicable en npm junto con package.json que declare:
-//   "name": "homebridge-garagedooropenercloud",
-//   "displayName": "Garage Door Opener Cloud",
-//   "pluginAlias": "GarageDoorOpenerCloud"
+// index.js — Homebridge Garage Door Opener Cloud (CommonJS, modo simulación)
+// Node >= 18 usa fetch nativo; Node < 18 hace dynamic import de node-fetch.
 
 let Service, Characteristic;
 
 // --- FETCH COMPATIBLE ---
-// Usa fetch nativo si existe; si no, dynamic import de node-fetch (ESM) incluso en CommonJS.
 const fetch = globalThis.fetch
   ? globalThis.fetch.bind(globalThis)
   : ((...args) => import("node-fetch").then(m => m.default(...args)));
@@ -18,60 +13,62 @@ module.exports = (homebridge) => {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
   homebridge.registerAccessory(
-    "homebridge-garagedooropenercloud",  // nombre del paquete
-    "GarageDoorOpenerCloud",             // pluginAlias (DEBE coincidir con package.json)
+    "homebridge-garagedooropenercloud",
+    "GarageDoorOpenerCloud",
     GarageDoorOpener
   );
 };
 
-// Utilidades
 function clamp(n, min, max) { return Math.max(min, Math.min(n, max)); }
 const sleep = (ms) => new Promise(res => setTimeout(res, ms));
 
 function GarageDoorOpener(log, config) {
   this.log = log;
 
-  // --- Config requerida / opcional ---
+  // Config base
   this.name = config.name || "Garage Door";
   this.deviceId = (config.deviceId || "").toLowerCase();
   this.authKey = config.authKey;
-
-  // Tipo de dispositivo:
-  //  - "relay": estado desde relays[0].ison
-  //  - "sensor": estado desde input:0.state (Plus/Gen2), el control se hace sobre el relé (toggle)
-  this.deviceType = (config.deviceType || "relay").toLowerCase(); // "relay" | "sensor"
+  this.deviceType = (config.deviceType || "relay").toLowerCase(); // relay | sensor
   this.channel = Number.isFinite(config.channel) ? config.channel : 0;
 
-  // Tiempos de movimiento (s)
+  // Tiempos
   this.openTime = clamp(Number(config.openTime || 20), 1, 300);
   this.closeTime = clamp(Number(config.closeTime || 20), 1, 300);
+  this.holdOpenTime = clamp(Number(config.holdOpenTime || 2), 0, 60); // tiempo "OPEN" simulado
 
-  // Polling
+  // Modo simulación y cierre automático
+  this.simulateOnly = (config.simulateOnly !== false);       // por defecto SIMULAR
+  this.autoClose = (config.autoClose !== false);             // por defecto cerrar tras holdOpenTime
+
+  // Polling: SOLO disponibilidad
   this.polling = config.polling !== false;
-  this.pollIntervalMs = clamp(Number(config.pollInterval || 60), 10, 300) * 1000; // 60s recomendado
+  this.pollIntervalMs = clamp(Number(config.pollInterval || 60), 10, 300) * 1000;
 
-  // Opcional: timeout HTTP en ms
+  // HTTP
   this.httpTimeoutMs = clamp(Number(config.httpTimeoutMs || 10000), 1000, 60000);
 
-  // Logs
+  // Debug
   this.debug = config.debug === true;
 
-  // Endpoints Shelly Cloud (overrideables por región)
+  // Endpoints Shelly Cloud
   this.statusCloudURL = config.statusCloudURL || "https://shelly-38-eu.shelly.cloud/device/status";
   this.controlCloudURL = config.controlCloudURL || "https://shelly-38-eu.shelly.cloud/device/relay/control";
 
-  // Estado interno para rate limit y concurrencia
-  this._backoffMs = 0;           // aumenta con 429, baja al recuperar
-  this._statusInFlight = false;  // evita solapamiento de lecturas
+  // Estado interno
+  this._backoffMs = 0;
+  this._statusInFlight = false;
+  this._simState = Characteristic.CurrentDoorState.CLOSED;
+  this._timers = { opening: null, open: null, closing: null };
 
-  // --- HomeKit Services ---
+  // Servicios HomeKit
   this.service = new Service.GarageDoorOpener(this.name);
   this.informationService = new Service.AccessoryInformation()
     .setCharacteristic(Characteristic.Manufacturer, "Shelly Cloud")
     .setCharacteristic(Characteristic.Model, this.deviceType.toUpperCase())
     .setCharacteristic(Characteristic.SerialNumber, this.deviceId || "UNKNOWN");
 
-  // Guardamos el último Target solicitado para no pisarlo en polling
+  // No pisamos Target en polling
   this.lastTarget = Characteristic.TargetDoorState.CLOSED;
 
   // Handlers
@@ -81,23 +78,23 @@ function GarageDoorOpener(log, config) {
   this.service.getCharacteristic(Characteristic.CurrentDoorState)
     .on("get", this.getCurrentState.bind(this));
 
-  // Polling con offset aleatorio (0–8s) para desincronizar múltiples accesorios
+  // Polling: SOLO disponibilidad con offset aleatorio
   if (this.polling) {
     const offset = Math.floor(Math.random() * 8000);
     setTimeout(() => {
-      this.pollStatus();
-      setInterval(this.pollStatus.bind(this), this.pollIntervalMs);
+      this.pollAvailability();
+      setInterval(this.pollAvailability.bind(this), this.pollIntervalMs);
     }, offset);
   }
 
-  this.log(
-    "[%s] Inicializado (type=%s, poll=%ss, timeout=%dms)",
-    this.name, this.deviceType, (this.pollIntervalMs / 1000), this.httpTimeoutMs
-  );
+  // Estado inicial simulado
+  this.service.getCharacteristic(Characteristic.CurrentDoorState).updateValue(this._simState);
 
-  // Validaciones mínimas
+  this.log("[%s] Inicializado (simulateOnly=%s, autoClose=%s, poll=%ss)",
+    this.name, this.simulateOnly, this.autoClose, this.pollIntervalMs / 1000);
+
   if (!this.deviceId || !this.authKey) {
-    this.log("[%s] ATENCIÓN: deviceId/authKey no configurados. El accesorio no funcionará correctamente.", this.name);
+    this.log("[%s] ATENCIÓN: deviceId/authKey no configurados. El control puede fallar.", this.name);
   }
 }
 
@@ -106,11 +103,10 @@ GarageDoorOpener.prototype = {
     return [this.informationService, this.service];
   },
 
-  // POST a Shelly Cloud con manejo de 429 y timeout
+  // --- Shelly POST con manejo de 429 y timeout ---
   async shellyPost(url, form) {
     const params = new URLSearchParams(form);
 
-    // Timeout con AbortController
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), this.httpTimeoutMs);
 
@@ -131,9 +127,8 @@ GarageDoorOpener.prototype = {
     }
     clearTimeout(timer);
 
-    // Rate limit (429) -> backoff + 1 reintento
     if (resp.status === 429) {
-      this._backoffMs = Math.min((this._backoffMs || 1000) * 2, 60000); // hasta 60s
+      this._backoffMs = Math.min((this._backoffMs || 1000) * 2, 60000);
       const jitter = Math.floor(Math.random() * 500);
       const waitMs = this._backoffMs + jitter;
       this.log("[%s] Rate limit (429). Backoff %d ms", this.name, waitMs);
@@ -152,92 +147,98 @@ GarageDoorOpener.prototype = {
       }).finally(() => clearTimeout(timer2));
 
       if (!retry.ok) throw new Error(`HTTP ${retry.status}`);
-      // éxito: relajamos el backoff
       this._backoffMs = Math.floor(this._backoffMs * 0.5);
       return retry.json();
     }
 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    // éxito normal: reset backoff
     this._backoffMs = 0;
     return resp.json();
   },
 
-  // Lectura del estado actual desde Shelly Cloud con lock anti-concurrencia
-  async readStatus() {
-    if (this._statusInFlight) {
-      // Evita duplicados (p. ej., polling y get al mismo tiempo)
-      await sleep(150);
-    }
-    this._statusInFlight = true;
-
+  // --- Sólo disponibilidad: ping a Shelly (no usamos device_status para estado) ---
+  async checkAvailability() {
     try {
       const statusData = { channel: this.channel, id: this.deviceId, auth_key: this.authKey };
-      const json = await this.shellyPost(this.statusCloudURL, statusData);
-      const ds = json && json.data && json.data.device_status;
-
-      let state;
-      if (this.deviceType === "sensor") {
-        const raw = ds && ds["input:0"] ? ds["input:0"].state : null;
-        if (this.debug) this.log("[%s] Sensor input:0.state=%s", this.name, raw);
-        // Sensor: true => CERRADA; false/null => ABIERTA
-        state = (raw === true) ? Characteristic.CurrentDoorState.CLOSED : Characteristic.CurrentDoorState.OPEN;
-      } else {
-        const raw = ds && Array.isArray(ds.relays) ? ds.relays[0] && ds.relays[0].ison : null;
-        if (this.debug) this.log("[%s] Relay relays[0].ison=%s", this.name, raw);
-        // Relay: true => ABIERTA; false/null => CERRADA (ajusta si tu instalación difiere)
-        state = (raw === true) ? Characteristic.CurrentDoorState.OPEN : Characteristic.CurrentDoorState.CLOSED;
-      }
-      return state;
-    } finally {
-      this._statusInFlight = false;
+      await this.shellyPost(this.statusCloudURL, statusData);
+      if (this.debug) this.log("[%s] Disponibilidad OK", this.name);
+      return true;
+    } catch (err) {
+      this.log("[%s] Disponibilidad ERROR: %s", this.name, err.message);
+      return false;
     }
   },
 
-  // Establecer estado objetivo desde HomeKit
+  // Poll: sólo disponibilidad
+  async pollAvailability() {
+    try {
+      await this.checkAvailability();
+      // No tocamos CurrentDoorState: permanece CLOSED salvo cuando simulamos apertura
+    } catch (err) {
+      this.log("[%s] Poll availability error: %s", this.name, err.message);
+    }
+  },
+
+  // Estado actual para HomeKit: simulado
+  async getCurrentState(callback) {
+    try {
+      // Siempre devolvemos el estado simulado (por defecto CLOSED)
+      callback(null, this._simState);
+    } catch (err) {
+      this.log("[%s] Status get error: %s", this.name, err.message);
+      callback(err);
+    }
+  },
+
+  // Control de objetivo
   async setTargetState(targetState, callback) {
     this.lastTarget = targetState;
+    const wantOpen = (targetState === Characteristic.TargetDoorState.OPEN);
+
     try {
-      const current = await this.readStatus();
-      const wantOpen = (targetState === Characteristic.TargetDoorState.OPEN);
-      const isOpen = (current === Characteristic.CurrentDoorState.OPEN);
-
-      if (this.debug) this.log("[%s] Target=%s, Current=%s", this.name, wantOpen ? "OPEN" : "CLOSED", isOpen ? "OPEN" : "CLOSED");
-
-      // Ya estamos en el estado deseado
-      if (wantOpen === isOpen) {
-        this.service.getCharacteristic(Characteristic.TargetDoorState).updateValue(targetState);
-        callback(null);
-        return;
-      }
-
-      // Formulario de control
+      // Enviar comando real al relé (aunque el estado HomeKit sea simulado)
       const form = { id: this.deviceId, channel: this.channel, auth_key: this.authKey };
       if (this.deviceType === "relay") {
         form.turn = wantOpen ? "on" : "off";
       } else {
-        // Con deviceType=sensor, el estado lo leemos del sensor,
-        // pero el actuador sigue siendo el relé -> usamos toggle
-        form.turn = "toggle";
+        form.turn = "toggle"; // sensor: estado leído por sensor; aquí sólo actuamos el relé
       }
-
-      // Transición visual en HomeKit
-      this.service.getCharacteristic(Characteristic.CurrentDoorState)
-        .updateValue(wantOpen ? Characteristic.CurrentDoorState.OPENING : Characteristic.CurrentDoorState.CLOSING);
 
       await this.shellyPost(this.controlCloudURL, form);
       this.log("[%s] Comando enviado: %s", this.name, form.turn);
 
-      // Esperamos el tiempo de movimiento y re-consultamos estado real
-      const ms = (wantOpen ? this.openTime : this.closeTime) * 1000;
-      setTimeout(async () => {
-        try {
-          const now = await this.readStatus();
-          this.service.getCharacteristic(Characteristic.CurrentDoorState).updateValue(now);
-        } catch (e) {
-          this.log("[%s] Error tras movimiento: %s", this.name, e.message);
-        }
-      }, ms);
+      // Cancelar cualquier simulación previa
+      this._clearTimers();
+
+      if (!this.simulateOnly) {
+        // Si en algún momento quisieras volver a estado real, aquí se llamaría a readStatus()
+        // Pero en tu modo solicitado, no se usa.
+      }
+
+      if (wantOpen) {
+        // Simular OPENING -> OPEN -> (opcional) CLOSING -> CLOSED
+        this._setSim(Characteristic.CurrentDoorState.OPENING);
+
+        this._timers.opening = setTimeout(() => {
+          this._setSim(Characteristic.CurrentDoorState.OPEN);
+
+          if (this.autoClose) {
+            this._timers.open = setTimeout(() => {
+              this._setSim(Characteristic.CurrentDoorState.CLOSING);
+
+              this._timers.closing = setTimeout(() => {
+                this._setSim(Characteristic.CurrentDoorState.CLOSED);
+              }, this.closeTime * 1000);
+            }, this.holdOpenTime * 1000);
+          }
+        }, this.openTime * 1000);
+      } else {
+        // Simular cierre inmediato si el usuario pide CLOSED
+        this._setSim(Characteristic.CurrentDoorState.CLOSING);
+        this._timers.closing = setTimeout(() => {
+          this._setSim(Characteristic.CurrentDoorState.CLOSED);
+        }, this.closeTime * 1000);
+      }
 
       callback(null);
     } catch (err) {
@@ -246,26 +247,21 @@ GarageDoorOpener.prototype = {
     }
   },
 
-  // Petición de estado desde HomeKit
-  async getCurrentState(callback) {
-    try {
-      const current = await this.readStatus();
-      this.service.getCharacteristic(Characteristic.CurrentDoorState).updateValue(current);
-      callback(null, current);
-    } catch (err) {
-      this.log("[%s] Status error: %s", this.name, err.message);
-      callback(err);
+  _setSim(state) {
+    this._simState = state;
+    this.service.getCharacteristic(Characteristic.CurrentDoorState).updateValue(state);
+    if (this.debug) {
+      const name = ["OPEN", "CLOSED", "OPENING", "CLOSING", "STOPPED"][state] ?? state;
+      this.log("[%s] Sim state -> %s", this.name, name);
     }
   },
 
-  // Polling periódico del estado
-  async pollStatus() {
-    try {
-      const current = await this.readStatus();
-      this.service.getCharacteristic(Characteristic.CurrentDoorState).updateValue(current);
-      // Nota: NO tocamos TargetDoorState en polling.
-    } catch (err) {
-      this.log("[%s] Poll error: %s", this.name, err.message);
+  _clearTimers() {
+    for (const k of ["opening", "open", "closing"]) {
+      if (this._timers[k]) {
+        clearTimeout(this._timers[k]);
+        this._timers[k] = null;
+      }
     }
   }
 };
