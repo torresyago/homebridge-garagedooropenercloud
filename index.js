@@ -1,9 +1,8 @@
 
-// index.js (CommonJS)
-// Requiere node-fetch v2: "node-fetch": "^2.6.7"
+// index.js — CommonJS con fetch nativo (Node >= 18)
+// No necesitas node-fetch
 
 let Service, Characteristic;
-const fetch = require("node-fetch"); // v2
 
 module.exports = (homebridge) => {
   Service = homebridge.hap.Service;
@@ -16,6 +15,7 @@ module.exports = (homebridge) => {
 };
 
 function clamp(n, min, max) { return Math.max(min, Math.min(n, max)); }
+const sleep = (ms) => new Promise(res => setTimeout(res, ms));
 
 function GarageDoorOpener(log, config) {
   this.log = log;
@@ -35,7 +35,7 @@ function GarageDoorOpener(log, config) {
 
   // Polling
   this.polling = config.polling !== false;
-  this.pollIntervalMs = clamp(Number(config.pollInterval || 30), 10, 300) * 1000;
+  this.pollIntervalMs = clamp(Number(config.pollInterval || 60), 10, 300) * 1000; // recomendado 60s
 
   // Logging
   this.debug = config.debug === true;
@@ -43,6 +43,10 @@ function GarageDoorOpener(log, config) {
   // Endpoints (permiten override por config)
   this.statusCloudURL = config.statusCloudURL || "https://shelly-38-eu.shelly.cloud/device/status";
   this.controlCloudURL = config.controlCloudURL || "https://shelly-38-eu.shelly.cloud/device/relay/control";
+
+  // Estados internos para rate-limit y concurrencia
+  this._backoffMs = 0;            // aumenta si recibimos 429
+  this._statusInFlight = false;   // evitar peticiones simultáneas
 
   // Servicios HomeKit
   this.service = new Service.GarageDoorOpener(this.name);
@@ -62,11 +66,15 @@ function GarageDoorOpener(log, config) {
     .on("get", this.getCurrentState.bind(this));
 
   if (this.polling) {
-    setInterval(this.pollStatus.bind(this), this.pollIntervalMs);
-    this.pollStatus();
+    // Offset aleatorio (0–8s) para no golpear Shelly Cloud a la vez
+    const offset = Math.floor(Math.random() * 8000);
+    setTimeout(() => {
+      this.pollStatus();
+      setInterval(this.pollStatus.bind(this), this.pollIntervalMs);
+    }, offset);
   }
 
-  this.log("[%s] Inicializado (%s)", this.name, this.deviceType);
+  this.log("[%s] Inicializado (%s, poll=%ss, offset=%sms)", this.name, this.deviceType, this.pollIntervalMs/1000, 0);
 }
 
 GarageDoorOpener.prototype = {
@@ -84,27 +92,59 @@ GarageDoorOpener.prototype = {
       },
       body: params
     });
+
+    // Manejo explícito de rate limit
+    if (resp.status === 429) {
+      this._backoffMs = Math.min((this._backoffMs || 1000) * 2, 60000); // exponencial hasta 60s
+      const jitter = Math.floor(Math.random() * 500);
+      const waitMs = this._backoffMs + jitter;
+      this.log("[%s] Rate limit (429). Backoff %d ms", this.name, waitMs);
+      await sleep(waitMs);
+      const retry = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": "homebridge-garagedooropenercloud/1.0"
+        },
+        body: params
+      });
+      if (!retry.ok) throw new Error(`HTTP ${retry.status}`);
+      this._backoffMs = Math.floor(this._backoffMs * 0.5); // reducimos backoff si OK
+      return retry.json();
+    }
+
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const json = await resp.json();
-    return json;
+    this._backoffMs = 0;
+    return resp.json();
   },
 
   async readStatus() {
-    const statusData = { channel: this.channel, id: this.deviceId, auth_key: this.authKey };
-    const json = await this.shellyPost(this.statusCloudURL, statusData);
-    const ds = json && json.data && json.data.device_status;
+    // Evitar llamadas simultáneas (especialmente en polling y get)
+    if (this._statusInFlight) {
+      await sleep(150);
+    }
+    this._statusInFlight = true;
 
-    let raw;
-    if (this.deviceType === "sensor") {
-      raw = ds && ds["input:0"] ? ds["input:0"].state : null;
-      if (this.debug) this.log("[%s] Sensor input:0.state=%s", this.name, raw);
-      // Sensor: true => puerta CERRADA; false => ABIERTA
-      return raw === true ? Characteristic.CurrentDoorState.CLOSED : Characteristic.CurrentDoorState.OPEN;
-    } else {
-      raw = ds && Array.isArray(ds.relays) ? ds.relays[0] && ds.relays[0].ison : null;
-      if (this.debug) this.log("[%s] Relay relays[0].ison=%s", this.name, raw);
-      // Relay: ON => interpretamos como ABIERTA; OFF => CERRADA
-      return raw === true ? Characteristic.CurrentDoorState.OPEN : Characteristic.CurrentDoorState.CLOSED;
+    try {
+      const statusData = { channel: this.channel, id: this.deviceId, auth_key: this.authKey };
+      const json = await this.shellyPost(this.statusCloudURL, statusData);
+      const ds = json && json.data && json.data.device_status;
+
+      let state;
+      if (this.deviceType === "sensor") {
+        const raw = ds && ds["input:0"] ? ds["input:0"].state : null;
+        if (this.debug) this.log("[%s] Sensor input:0.state=%s", this.name, raw);
+        // Sensor: true => CERRADA; false/null => ABIERTA
+        state = (raw === true) ? Characteristic.CurrentDoorState.CLOSED : Characteristic.CurrentDoorState.OPEN;
+      } else {
+        const raw = ds && Array.isArray(ds.relays) ? ds.relays[0] && ds.relays[0].ison : null;
+        if (this.debug) this.log("[%s] Relay relays[0].ison=%s", this.name, raw);
+        // Relay: ON => ABIERTA; OFF/null => CERRADA (ajusta si tu instalación difiere)
+        state = (raw === true) ? Characteristic.CurrentDoorState.OPEN : Characteristic.CurrentDoorState.CLOSED;
+      }
+      return state;
+    } finally {
+      this._statusInFlight = false;
     }
   },
 
@@ -117,7 +157,7 @@ GarageDoorOpener.prototype = {
 
       if (this.debug) this.log("[%s] Target=%s, Current=%s", this.name, wantOpen ? "OPEN" : "CLOSED", isOpen ? "OPEN" : "CLOSED");
 
-      // Si ya estamos en el estado deseado, no hacemos nada
+      // Ya en estado deseado
       if (wantOpen === isOpen) {
         this.service.getCharacteristic(Characteristic.TargetDoorState).updateValue(targetState);
         callback(null);
@@ -129,10 +169,10 @@ GarageDoorOpener.prototype = {
       if (this.deviceType === "relay") {
         form.turn = wantOpen ? "on" : "off";
       } else {
-        form.turn = "toggle"; // actuamos sobre el relé que acciona la puerta; el estado lo lee el sensor
+        form.turn = "toggle"; // actuamos el relé; el estado lo lee el sensor
       }
 
-      // Transición
+      // Transición visual
       this.service.getCharacteristic(Characteristic.CurrentDoorState)
         .updateValue(wantOpen ? Characteristic.CurrentDoorState.OPENING : Characteristic.CurrentDoorState.CLOSING);
 
