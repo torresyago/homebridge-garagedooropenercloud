@@ -40,15 +40,23 @@
     },
     "openTime": {
       "title": "Tiempo de apertura (segundos)",
-      "description": "Duración estimada de apertura para mostrar OPENING antes de consultar estado real",
+      "description": "Duración estimada de apertura para mostrar OPENING antes de pasar a OPEN",
       "type": "number",
       "default": 20,
       "minimum": 1,
       "maximum": 300
     },
+    "holdOpenTime": {
+      "title": "Tiempo de estado OPEN simulado (segundos)",
+      "description": "Tiempo que la puerta permanece en estado OPEN antes de iniciar el cierre automático (si está activado)",
+      "type": "number",
+      "default": 2,
+      "minimum": 0,
+      "maximum": 60
+    },
     "closeTime": {
       "title": "Tiempo de cierre (segundos)",
-      "description": "Duración estimada de cierre para mostrar CLOSING antes de consultar estado real",
+      "description": "Duración estimada de cierre para mostrar CLOSING antes de pasar a CLOSED",
       "type": "number",
       "default": 20,
       "minimum": 1,
@@ -56,7 +64,7 @@
     },
     "polling": {
       "title": "Polling activado",
-      "description": "Habilita la consulta periódica del estado a Shelly Cloud",
+      "description": "Habilita la consulta periódica de disponibilidad de Shelly Cloud",
       "type": "boolean",
       "default": true
     },
@@ -75,6 +83,18 @@
       "default": 10000,
       "minimum": 1000,
       "maximum": 60000
+    },
+    "simulateOnly": {
+      "title": "Modo simulación de estado",
+      "description": "El estado reportado es simulado (CLOSED por defecto; OPENING→OPEN→CLOSING al abrir). El chequeo de Shelly solo verifica disponibilidad.",
+      "type": "boolean",
+      "default": true
+    },
+    "autoClose": {
+      "title": "Cierre automático tras apertura simulada",
+      "description": "Si está activado, tras el tiempo de apertura y el tiempo en OPEN, la puerta simulará el cierre automáticamente.",
+      "type": "boolean",
+      "default": true
     },
     "debug": {
       "title": "Modo debug",
@@ -102,18 +122,18 @@
     },
     {
       "type": "section",
-      "title": "Movimiento",
-      "items": ["openTime", "closeTime"]
+      "title": "Movimiento y simulación",
+      "items": ["openTime", "holdOpenTime", "closeTime", "simulateOnly", "autoClose"]
     },
     {
       "type": "section",
-      "title": "Polling",
-      "items": ["polling", "pollInterval"]
+      "title": "Polling y red",
+      "items": ["polling", "pollInterval", "httpTimeoutMs", "statusCloudURL", "controlCloudURL"]
     },
     {
       "type": "section",
       "title": "Avanzado",
-      "items": ["httpTimeoutMs", "statusCloudURL", "controlCloudURL", "debug"]
+      "items": ["debug"]
     }
   ]
 }
