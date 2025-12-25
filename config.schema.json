@@ -7,77 +7,114 @@
   "properties": {
     "name": {
       "title": "Nombre",
+      "description": "Nombre tal y como aparecerá en HomeKit",
       "type": "string",
-      "required": true,
       "default": "Garage Door"
     },
     "deviceId": {
       "title": "Shelly Device ID",
+      "description": "ID del dispositivo Shelly (minúsculas, sin guiones)",
       "type": "string",
-      "required": true,
       "placeholder": "e868e7d2b238"
     },
     "authKey": {
       "title": "Shelly Auth Key",
+      "description": "Clave de autenticación Shelly Cloud (copiar completa desde la app Shelly)",
       "type": "string",
-      "required": true,
-      "placeholder": "MTAzNDEydWlk...",
-      "format": "password"
+      "format": "password",
+      "placeholder": "MTAzNDEydWlk..."
     },
     "deviceType": {
       "title": "Tipo de dispositivo",
+      "description": "Selecciona el origen del estado: relay (Gen1) o sensor (Plus/Gen2)",
       "type": "string",
-      "required": true,
       "enum": ["relay", "sensor"],
       "default": "relay"
     },
     "channel": {
       "title": "Canal",
+      "description": "Canal del dispositivo Shelly (normalmente 0)",
       "type": "number",
       "default": 0,
       "minimum": 0
     },
     "openTime": {
       "title": "Tiempo de apertura (segundos)",
+      "description": "Duración estimada de apertura para mostrar OPENING antes de consultar estado real",
       "type": "number",
       "default": 20,
       "minimum": 1,
-      "maximum": 120
+      "maximum": 300
     },
     "closeTime": {
       "title": "Tiempo de cierre (segundos)",
+      "description": "Duración estimada de cierre para mostrar CLOSING antes de consultar estado real",
       "type": "number",
       "default": 20,
       "minimum": 1,
-      "maximum": 120
+      "maximum": 300
     },
     "polling": {
       "title": "Polling activado",
+      "description": "Habilita la consulta periódica del estado a Shelly Cloud",
       "type": "boolean",
       "default": true
     },
     "pollInterval": {
       "title": "Intervalo de polling (segundos)",
+      "description": "Recomendado ≥ 60s cuando tengas varias puertas para evitar rate-limit (HTTP 429)",
       "type": "number",
-      "default": 30,
+      "default": 60,
       "minimum": 10,
       "maximum": 300
     },
+    "httpTimeoutMs": {
+      "title": "Timeout HTTP (milisegundos)",
+      "description": "Tiempo máximo de espera por respuesta de Shelly Cloud",
+      "type": "number",
+      "default": 10000,
+      "minimum": 1000,
+      "maximum": 60000
+    },
     "debug": {
       "title": "Modo debug",
+      "description": "Muestra logs detallados del accesorio",
       "type": "boolean",
       "default": false
     },
     "statusCloudURL": {
       "title": "URL de estado Shelly Cloud (opcional)",
-      "type": "string",
-      "required": false
+      "description": "Sobrescribe la URL por defecto si tu región usa otro endpoint",
+      "type": "string"
     },
     "controlCloudURL": {
       "title": "URL de control Shelly Cloud (opcional)",
-      "type": "string",
-      "required": false
+      "description": "Sobrescribe la URL por defecto si tu región usa otro endpoint",
+      "type": "string"
     }
-  }
+  },
+  "required": ["name", "deviceId", "authKey", "deviceType"],
+  "layout": [
+    {
+      "type": "section",
+      "title": "Básico",
+      "items": ["name", "deviceId", "authKey", "deviceType", "channel"]
+    },
+    {
+      "type": "section",
+      "title": "Movimiento",
+      "items": ["openTime", "closeTime"]
+    },
+    {
+      "type": "section",
+      "title": "Polling",
+      "items": ["polling", "pollInterval"]
+    },
+    {
+      "type": "section",
+      "title": "Avanzado",
+      "items": ["httpTimeoutMs", "statusCloudURL", "controlCloudURL", "debug"]
+    }
+  ]
 }
 
