@@ -1,5 +1,5 @@
 var Service, Characteristic;
-const request = require("request");  // ← SOLO UNA VEZ al inicio
+const request = require("request");
 
 module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
@@ -14,10 +14,7 @@ function GarageDoorOpener(log, config) {
     this.authKey = config.authKey;
     this.channel = config.channel || 0;
     this.deviceType = config.deviceType || "relay";
-    this.openTime = config.openTime || 20;
-    this.closeTime = config.closeTime || 20;
     this.polling = config.polling !== false;
-    this.debug = config.debug !== false;
     this.statusCloudURL = "https://shelly-38-eu.shelly.cloud/device/status";
     this.controlCloudURL = "https://shelly-38-eu.shelly.cloud/device/relay/control";
     
@@ -41,68 +38,46 @@ function GarageDoorOpener(log, config) {
         this.pollStatus();
     }
     
-    this.log("[%s] Initializing %s accessory... (initial state: CLOSED)", this.name, this.deviceType);
+    this.log("[%s] Initializing %s accessory... (CLOSED)", this.name, this.deviceType);
 }
 
 GarageDoorOpener.prototype = {
     getServices: function() { return [this.informationService, this.service]; },
 
     setTargetState: function(targetState, callback) {
-        this.log("[%s] Target state: %s", this.name, targetState === 0 ? "OPEN" : "CLOSED");
+        this.log("[%s] Target: %s", this.name, targetState === 0 ? "OPEN" : "CLOSE");
         const toggleData = { id: this.deviceId, channel: this.channel, auth_key: this.authKey, turn: "toggle" };
         request.post({ url: this.controlCloudURL, form: toggleData }, (err) => {
             if (err) { this.log("[%s] Control error: %s", this.name, err.message); callback(err); return; }
-            this.log("[%s] Toggle sent to Shelly", this.name);
+            this.log("[%s] Toggle sent", this.name);
             callback(null);
         });
     },
 
     getCurrentState: function(callback) {
-        const currentState = Characteristic.CurrentDoorState.CLOSED;
-        callback(null, currentState);
+        callback(null, Characteristic.CurrentDoorState.CLOSED);
     },
 
-
-getStatus: function(callback) {
-    const statusData = { id: this.deviceId, auth_key: this.authKey };
-    
-    this.log("[%s] >>> REQUEST: id=%s auth_key=%s", this.name, this.deviceId, this.authKey.substring(0,8)+'...');
-    
-    request.post({ url: this.statusCloudURL, form: statusData }, (err, response, body) => {
-        this.log("[%s] <<< RESPONSE status=%s body.length=%s", this.name, response?.statusCode, body?.length);
-        
-        if (err) { 
-            this.log("[%s] ERROR: %s", this.name, err.message);
-            callback(null, false); return; 
-        }
-        
-        // RAW body siempre
-        this.log("[%s] RAW body preview: %s", this.name, body.substring(0, 300));
-        
-        try {
-            const json = JSON.parse(body);
-            const cloudData = json?.data?.device_status?.cloud;
-            this.log("[%s] PARSED cloud: %s", this.name, JSON.stringify(cloudData));
-            
-            const isConnected = cloudData?.connected === true;
-            this.log("[%s] isConnected=%s (cloud.connected=%s)", this.name, isConnected, cloudData?.connected);
-            
-            callback(null, isConnected);
-        } catch (e) {
-            this.log("[%s] JSON PARSE FAIL: %s", this.name, e.message);
-            callback(null, false);
-        }
-    });
-},
-
-
+    getStatus: function(callback) {
+        const statusData = { id: this.deviceId, auth_key: this.authKey }; // SIN channel
+        request.post({ url: this.statusCloudURL, form: statusData }, (err, response, body) => {
+            if (err) { callback(null, false); return; }
+            try {
+                const json = JSON.parse(body);
+                const cloudConnected = json?.data?.device_status?.cloud?.connected === true;
+                callback(null, cloudConnected);
+            } catch (e) {
+                callback(null, false);
+            }
+        });
+    },
 
     pollStatus: function() {
         this.getStatus((err, isOnline) => {
             const currentState = Characteristic.CurrentDoorState.CLOSED;
             this.service.getCharacteristic(Characteristic.CurrentDoorState).updateValue(currentState);
             this.service.getCharacteristic(Characteristic.TargetDoorState).updateValue(currentState);
-            this.log("[%s] Poll: %s - State: CLOSED", this.name, isOnline ? "ONLINE" : "OFFLINE");
+            this.log("[%s] Poll: %s - CLOSED", this.name, isOnline ? "ONLINE" : "OFFLINE");
         });
     }
 };
