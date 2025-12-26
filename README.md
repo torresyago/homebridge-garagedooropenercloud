@@ -1,226 +1,90 @@
+# homebridge-garagedooropenercloud
 
-# Homebridge GarageDoorOpenerCloud
+[![npm](https://img.shields.io/npm/v/homebridge-garagedooropenercloud.svg)](https://www.npmjs.com/package/homebridge-garagedooropenercloud)
+[![GitHub stars](https://img.shields.io/github/stars/torresyago/homebridge-garagedooropenercloud.svg)](https://github.com/torresyago/homebridge-garagedooropenercloud)
 
-[![npm version](https://badge.fury.io/js/homebridge-garagedooropenercloud.svg)](https://www.npmjs.com/package/homebridge-garagedooropenercloud)
+**Homebridge plugin para abrir/cerrar garaje usando Shelly Cloud API** 🚪☁️
 
-Plugin Homebridge para controlar puertas de garaje vía Shelly Cloud API. Compatible con HomeKit y soporta todos los modelos Shelly (Gen1, Plus/Gen2) de forma universal.
+## Descripción
 
----
+Fork mejorado de [jmaferreira/homebridge-garage-door-shelly1](https://github.com/jmaferreira/homebridge-garage-door-shelly1)
 
-## ✨ Características
+**Novedades:**
+- ✅ Control remoto vía Shelly Cloud (**sin IP local**)
+- ✅ Polling de estado real vía Cloud API  
+- ✅ Sensor de puerta integrado (reed switch)
+- ✅ Compatible Homebridge Config UI X
 
-- Control de relé Shelly desde HomeKit (Abrir/Cerrar)
-- Polling automático (intervalo configurable)
-- Soporte universal: Gen1 (`relay`), Plus/Gen2 (`sensor`)
-- Configuración avanzada: tiempos de apertura/cierre, polling, debug, endpoints Shelly Cloud
-- Manejo inteligente de rate-limit Shelly Cloud (HTTP 429): backoff y escalonado de polling
-- Compatible con Node.js >= 18 (usa `fetch` nativo, sin dependencias externas)
+## 🔧 Instalación
 
----
+npm install -g torresyago/homebridge-garagedooropenercloud
 
-## 🚀 Instalación
+## ⚙️ Configuración
 
-```bash
-npm install -g homebridge-garagedooropenercloud
-``
+  {
+    "accessory": "GarageDoorOpenerCloud",
+    "name": "puerta2nueva",
+    "deviceId": "euuddd8",
+    "authKey": "MTAxxxxxx",
+    "channel": "0",
+    "cloudBaseURL": "https://shelly-38-eu.shelly.cloud/device/relay/control",
+    "statusCloudURL": "https://shelly-38-eu.shelly.cloud/device/status",
+    "statusKey": "$.data.device_status.relays[0].ison",
+    "statusValueOpen": "false",
+    "statusValueClosed": "true",
+    "openTime": 10,
+    "closeTime": 10,
+    "polling": true,
+    "pollInterval": 30,
+    "debug": false,
+    "manufacturer": "yago",
+    "model": "GarageDoorOpenerCloud"
+  }
 
-# Homebridge GarageDoorOpenerCloud
+### 📱 Credenciales Shelly Cloud
 
-[![npm version](https://badge.fury.io/js/homebridge-garagedooropenercloud.svg)](https://www.npmjs.com/package/homebridge-garagedooropenercloud)
+1. **App Shelly** → Dispositivo → **Settings** → **Cloud** → **Device ID**
+2. **App Shelly** → **Perfil** → **Auth Key**
 
-Plugin Homebridge para controlar puertas de garaje vía Shelly Cloud API. Compatible con HomeKit y soporta todos los modelos Shelly (Gen1, Plus/Gen2) de forma universal.
+## 📋 Opciones completas
 
----
+| Parámetro | Descripción | Por defecto |
+|-----------|-------------|-------------|
+| `deviceId` | **ID dispositivo** | **Obligatorio** |
+| `authKey` | **Auth Key** | **Obligatorio** |
+| `channel` | Canal relay | `0` |
+| `openTime` | Segundos apertura | `10` |
+| `closeTime` | Segundos cierre | `10` |
+| `polling` | Polling activo | `false` |
+| `pollInterval` | Segundos polling | `30` |
+| `debug` | Logs detallados | `false` |
 
-## ✨ Características
 
-- Control de relé Shelly desde HomeKit (Abrir/Cerrar)
-- Polling automático (intervalo configurable)
-- Soporte universal: Gen1 (`relay`), Plus/Gen2 (`sensor`)
-- Configuración avanzada: tiempos de apertura/cierre, polling, debug, endpoints Shelly Cloud
-- Manejo inteligente de rate-limit Shelly Cloud (HTTP 429): backoff y escalonado de polling
-- Compatible con Node.js >= 18 (usa `fetch` nativo, sin dependencias externas)
+## 🎯 Funcionamiento
 
----
+Abrir/Cerrar → POST /relay/control?turn=on
+Estado → POST /device/status → input:0.state
+false → 🚪 ABIERTA
+true → 🚪 CERRADA
 
-## 🚀 Instalación
 
-```bash
-npm install -g homebridge-garagedooropenercloud
-``
+## 🏠 Estados HomeKit
 
-# Homebridge GarageDoorOpenerCloud
+| Estado HomeKit | Valor | Sensor |
+|----------------|-------|--------|
+| **Abierta** | `0` | `false` |
+| **Cerrada** | `1` | `true` |
+| **Abriendo** | `2` | Simulado |
+| **Cerrando** | `3` | Simulado |
 
-[![npm version](https://badge.fury.io/js/homebridge-garagedooropenercloud.svg)](https://www.npmjs.com/package/homebridge-garagedooropenercloud)
+## 👨‍💻 Autor
 
-Plugin Homebridge para controlar puertas de garaje vía Shelly Cloud API. Compatible con HomeKit y soporta todos los modelos Shelly (Gen1, Plus/Gen2) de forma universal.
+**torresyago** - [GitHub](https://github.com/torresyago)
 
----
+**Basado en:**
+- [jmaferreira/homebridge-garage-door-shelly1](https://github.com/jmaferreira/homebridge-garage-door-shelly1)
+- [andreaseu/homebridge-garage-remote-http](https://github.com/andreaseu/homebridge-garage-remote-http)
 
-## ✨ Características
+## 📄 Licencia
 
-- Control de relé Shelly desde HomeKit (Abrir/Cerrar)
-- Polling automático (intervalo configurable)
-- Soporte universal: Gen1 (`relay`), Plus/Gen2 (`sensor`)
-- Configuración avanzada: tiempos de apertura/cierre, polling, debug, endpoints Shelly Cloud
-- Manejo inteligente de rate-limit Shelly Cloud (HTTP 429): backoff y escalonado de polling
-- Compatible con Node.js >= 18 (usa `fetch` nativo, sin dependencias externas)
-
----
-
-## 🚀 Instalación
-
-```bash
-npm install -g homebridge-garagedooropenercloud
-``
-
-# Homebridge GarageDoorOpenerCloud
-
-[![npm version](https://badge.fury.io/js/homebridge-garagedooropenercloud.svg)](https://www.npmjs.com/package/homebridge-garagedooropenercloud)
-
-Plugin Homebridge para controlar puertas de garaje vía Shelly Cloud API. Compatible con HomeKit y soporta todos los modelos Shelly (Gen1, Plus/Gen2) de forma universal.
-
----
-
-## ✨ Características
-
-- Control de relé Shelly desde HomeKit (Abrir/Cerrar)
-- Polling automático (intervalo configurable)
-- Soporte universal: Gen1 (`relay`), Plus/Gen2 (`sensor`)
-- Configuración avanzada: tiempos de apertura/cierre, polling, debug, endpoints Shelly Cloud
-- Manejo inteligente de rate-limit Shelly Cloud (HTTP 429): backoff y escalonado de polling
-- Compatible con Node.js >= 18 (usa `fetch` nativo, sin dependencias externas)
-
----
-
-## 🚀 Instalación
-
-```bash
-npm install -g homebridge-garagedooropenercloud
-``
-
-# Homebridge GarageDoorOpenerCloud
-
-[![npm version](https://badge.fury.io/js/homebridge-garagedooropenercloud.svg)](https://www.npmjs.com/package/homebridge-garagedooropenercloud)
-
-Plugin Homebridge para controlar puertas de garaje vía Shelly Cloud API. Compatible con HomeKit y soporta todos los modelos Shelly (Gen1, Plus/Gen2) de forma universal.
-
----
-
-## ✨ Características
-
-- Control de relé Shelly desde HomeKit (Abrir/Cerrar)
-- Polling automático (intervalo configurable)
-- Soporte universal: Gen1 (`relay`), Plus/Gen2 (`sensor`)
-- Configuración avanzada: tiempos de apertura/cierre, polling, debug, endpoints Shelly Cloud
-- Manejo inteligente de rate-limit Shelly Cloud (HTTP 429): backoff y escalonado de polling
-- Compatible con Node.js >= 18 (usa `fetch` nativo, sin dependencias externas)
-
----
-
-## 🚀 Instalación
-
-```bash
-npm install -g homebridge-garagedooropenercloud
-``
-
-# Homebridge GarageDoorOpenerCloud
-
-[![npm version](https://badge.fury.io/js/homebridge-garagedooropenercloud.svg)](https://www.npmjs.com/package/homebridge-garagedooropenercloud)
-
-Plugin Homebridge para controlar puertas de garaje vía Shelly Cloud API. Compatible con HomeKit y soporta todos los modelos Shelly (Gen1, Plus/Gen2) de forma universal.
-
----
-
-## ✨ Características
-
-- Control de relé Shelly desde HomeKit (Abrir/Cerrar)
-- Polling automático (intervalo configurable)
-- Soporte universal: Gen1 (`relay`), Plus/Gen2 (`sensor`)
-- Configuración avanzada: tiempos de apertura/cierre, polling, debug, endpoints Shelly Cloud
-- Manejo inteligente de rate-limit Shelly Cloud (HTTP 429): backoff y escalonado de polling
-- Compatible con Node.js >= 18 (usa `fetch` nativo, sin dependencias externas)
-
----
-
-## 🚀 Instalación
-
-```bash
-npm install -g homebridge-garagedooropenercloud
-``
-
-# Homebridge GarageDoorOpenerCloud
-
-[![npm version](https://badge.fury.io/js/homebridge-garagedooropenercloud.svg)](https://www.npmjs.com/package/homebridge-garagedooropenercloud)
-
-Plugin Homebridge para controlar puertas de garaje vía Shelly Cloud API. Compatible con HomeKit y soporta todos los modelos Shelly (Gen1, Plus/Gen2) de forma universal.
-
----
-
-## ✨ Características
-
-- Control de relé Shelly desde HomeKit (Abrir/Cerrar)
-- Polling automático (intervalo configurable)
-- Soporte universal: Gen1 (`relay`), Plus/Gen2 (`sensor`)
-- Configuración avanzada: tiempos de apertura/cierre, polling, debug, endpoints Shelly Cloud
-- Manejo inteligente de rate-limit Shelly Cloud (HTTP 429): backoff y escalonado de polling
-- Compatible con Node.js >= 18 (usa `fetch` nativo, sin dependencias externas)
-
----
-
-## 🚀 Instalación
-
-```bash
-npm install -g homebridge-garagedooropenercloud
-``
-
-# Homebridge GarageDoorOpenerCloud
-
-[![npm version](https://badge.fury.io/js/homebridge-garagedooropenercloud.svg)](https://www.npmjs.com/package/homebridge-garagedooropenercloud)
-
-Plugin Homebridge para controlar puertas de garaje vía Shelly Cloud API. Compatible con HomeKit y soporta todos los modelos Shelly (Gen1, Plus/Gen2) de forma universal.
-
----
-
-## ✨ Características
-
-- Control de relé Shelly desde HomeKit (Abrir/Cerrar)
-- Polling automático (intervalo configurable)
-- Soporte universal: Gen1 (`relay`), Plus/Gen2 (`sensor`)
-- Configuración avanzada: tiempos de apertura/cierre, polling, debug, endpoints Shelly Cloud
-- Manejo inteligente de rate-limit Shelly Cloud (HTTP 429): backoff y escalonado de polling
-- Compatible con Node.js >= 18 (usa `fetch` nativo, sin dependencias externas)
-
----
-
-## 🚀 Instalación
-
-```bash
-npm install -g homebridge-garagedooropenercloud
-``
-
-# Homebridge GarageDoorOpenerCloud
-
-[![npm version](https://badge.fury.io/js/homebridge-garagedooropenercloud.svg)](https://www.npmjs.com/package/homebridge-garagedooropenercloud)
-
-Plugin Homebridge para controlar puertas de garaje vía Shelly Cloud API. Compatible con HomeKit y soporta todos los modelos Shelly (Gen1, Plus/Gen2) de forma universal.
-
----
-
-## ✨ Características
-
-- Control de relé Shelly desde HomeKit (Abrir/Cerrar)
-- Polling automático (intervalo configurable)
-- Soporte universal: Gen1 (`relay`), Plus/Gen2 (`sensor`)
-- Configuración avanzada: tiempos de apertura/cierre, polling, debug, endpoints Shelly Cloud
-- Manejo inteligente de rate-limit Shelly Cloud (HTTP 429): backoff y escalonado de polling
-- Compatible con Node.js >= 18 (usa `fetch` nativo, sin dependencias externas)
-
----
-
-## 🚀 Instalación
-
-```bash
-npm install -g homebridge-garagedooropenercloud
-``
-
+MIT License

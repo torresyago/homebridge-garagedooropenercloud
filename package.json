@@ -1,15 +1,18 @@
 {
   "name": "homebridge-garagedooropenercloud",
-  "version": "1.2.30",
-  "description": "Homebridge plugin para puerta de garaje usando Shelly Cloud API (modo simulación de estado + backoff 429).",
+  "version": "1.2.6",
+  "description": "Homebridge plugin for garage door opener using Shelly Cloud API",
   "main": "index.js",
-  "type": "commonjs",
-  "displayName": "Garage Door Opener Cloud",
-  "pluginAlias": "GarageDoorOpenerCloud",
-  "homebridge": {
-    "displayName": "Garage Door Opener Cloud",
-    "pluginAlias": "GarageDoorOpenerCloud",
-    "type": "accessory"
+  "engines": {
+    "homebridge": ">=0.4.50",
+    "node": ">=12.13.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yago/homebridge-garagedooropenercloud"
   },
   "keywords": [
     "homebridge-plugin",
@@ -20,34 +23,14 @@
     "shelly-cloud",
     "cloud"
   ],
-  "engines": {
-    "homebridge": ">=1.6.0",
-    "node": ">=18"
-  },
   "author": "yago",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yago/homebridge-garagedooropenercloud"
-  },
   "bugs": {
     "url": "https://github.com/yago/homebridge-garagedooropenercloud/issues"
   },
   "homepage": "https://github.com/yago/homebridge-garagedooropenercloud#readme",
-  "optionalDependencies": {
-    "node-fetch": "^3.3.2"
-  },
-  "files": [
-    "index.js",
-    "config.schema.json",
-    "README.md",
-    "CHANGELOG.md",
-    "LICENSE"
-  ],
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "publishConfig": {
-    "access": "public"
+  "dependencies": {
+    "jsonpath": "^1.0.2",
+    "request": "^2.88.2"
   }
 }
