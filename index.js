@@ -62,8 +62,13 @@ GarageDoorOpener.prototype = {
         callback(null, currentState);
     },
 
+
 getStatus: function(callback) {
-    const statusData = { channel: this.channel, id: this.deviceId, auth_key: this.authKey };
+    const statusData = { 
+        id: this.deviceId,      // ← Solo ID (sin channel/turn)
+        auth_key: this.authKey 
+    };
+    
     request.post({ url: this.statusCloudURL, form: statusData }, (err, response, body) => {
         if (err) { 
             this.log("[%s] Connection error: %s", this.name, err.message);
@@ -73,22 +78,28 @@ getStatus: function(callback) {
         
         try {
             const json = JSON.parse(body);
-            // ✅ Check PRECISO: cloud.connected == true
-            const isCloudConnected = json?.data?.device_status?.cloud?.connected === true;
+            const cloudStatus = json?.data?.device_status?.cloud;
+            
+            // ✅ Detecta TODAS las variantes de tus Shelly
+            const isCloudConnected = cloudStatus?.connected === true || 
+                                   cloudStatus?.enabled === true;
             
             if (isCloudConnected) {
-                this.log("[%s] Shelly CLOUD CONNECTED (true)", this.name);
+                this.log("[%s] Shelly CLOUD CONNECTED ✓", this.name);
                 callback(null, true);
             } else {
-                this.log("[%s] Shelly CLOUD OFFLINE (cloud.connected: %s)", this.name, json?.data?.device_status?.cloud?.connected);
+                this.log("[%s] CLOUD OFFLINE: %s", this.name, JSON.stringify(cloudStatus || 'no cloud data'));
                 callback(null, false);
             }
         } catch (e) {
-            this.log("[%s] JSON parse error: %s", this.name, e.message);
+            this.log("[%s] JSON error: %s", this.name, body.substring(0, 100));
             callback(null, false);
         }
     });
 },
+
+
+
 
     pollStatus: function() {
         this.getStatus((err, isOnline) => {
