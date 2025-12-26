@@ -64,50 +64,36 @@ GarageDoorOpener.prototype = {
 
 
 getStatus: function(callback) {
-    // FORMATO EXACTO de tus curls que FUNCIONAN
-    const statusData = { 
-        id: this.deviceId,
-        auth_key: this.authKey
-        // SIN channel - esto rompía Rincón/Mauleón
-    };
+    const statusData = { id: this.deviceId, auth_key: this.authKey };
     
-    request.post({ 
-        url: this.statusCloudURL, 
-        form: statusData,
-        timeout: 10000  // 10s timeout
-    }, (err, response, body) => {
+    this.log("[%s] >>> REQUEST: id=%s auth_key=%s", this.name, this.deviceId, this.authKey.substring(0,8)+'...');
+    
+    request.post({ url: this.statusCloudURL, form: statusData }, (err, response, body) => {
+        this.log("[%s] <<< RESPONSE status=%s body.length=%s", this.name, response?.statusCode, body?.length);
+        
         if (err) { 
-            this.log("[%s] Connection error: %s", this.name, err.message);
-            callback(null, false);
-            return; 
+            this.log("[%s] ERROR: %s", this.name, err.message);
+            callback(null, false); return; 
         }
+        
+        // RAW body siempre
+        this.log("[%s] RAW body preview: %s", this.name, body.substring(0, 300));
         
         try {
             const json = JSON.parse(body);
-            
-            // DEBUG: Ver qué llega exactamente
             const cloudData = json?.data?.device_status?.cloud;
-            this.log("[%s] Cloud data: %s", this.name, JSON.stringify(cloudData));
+            this.log("[%s] PARSED cloud: %s", this.name, JSON.stringify(cloudData));
             
-            // ✅ Múltiples paths posibles
-            const isConnected = json?.data?.device_status?.cloud?.connected === true ||
-                               json?.data?.online === true ||
-                               json?.data?.device_status?.cloud?.enabled === true;
+            const isConnected = cloudData?.connected === true;
+            this.log("[%s] isConnected=%s (cloud.connected=%s)", this.name, isConnected, cloudData?.connected);
             
-            if (isConnected) {
-                this.log("[%s] Shelly CLOUD CONNECTED ✓", this.name);
-                callback(null, true);
-            } else {
-                this.log("[%s] CLOUD OFFLINE: %s", this.name, JSON.stringify(cloudData || 'missing'));
-                callback(null, false);
-            }
+            callback(null, isConnected);
         } catch (e) {
-            this.log("[%s] JSON error. Body preview: %s", this.name, body.substring(0, 150));
+            this.log("[%s] JSON PARSE FAIL: %s", this.name, e.message);
             callback(null, false);
         }
     });
 },
-
 
 
 
