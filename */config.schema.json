@@ -1,0 +1,68 @@
+{
+    "name": "Shelly Garage Door Opener Cloud",
+    "domain": "homebridge-garagedooropenercloud",
+    "exclusive": true,
+    "type": "object",
+    "properties": {
+        "name": {
+            "title": "Name",
+            "required": true,
+            "type": "string",
+            "default": "Garage Door"
+        },
+        "deviceId": {
+            "title": "Shelly Device ID",
+            "required": true,
+            "type": "string",
+            "placeholder": "e868e7d2b238"
+        },
+        "authKey": {
+            "title": "Shelly Auth Key",
+            "required": true,
+            "type": "string",
+            "placeholder": "MTAzNDEydWlk...",
+            "format": "password"
+        },
+        "deviceType": {
+            "title": "Device Type",
+            "type": "string",
+            "required": true,
+            "oneOf": [
+                { "title": "Relay (Gen1 - relays[0].ison)", "const": "relay" },
+                { "title": "Sensor (Plus/Gen2 - input:0.state)", "const": "sensor" }
+            ],
+            "default": "relay"
+        },
+        "channel": {
+            "title": "Channel",
+            "type": "number",
+            "default": 0
+        },
+        "openTime": {
+            "title": "Open Time (seconds)",
+            "type": "number",
+            "default": 20
+        },
+        "closeTime": {
+            "title": "Close Time (seconds)", 
+            "type": "number",
+            "default": 20
+        },
+        "polling": {
+            "title": "Polling Enabled",
+            "type": "boolean",
+            "default": true
+        },
+        "pollInterval": {
+            "title": "Poll Interval (seconds)",
+            "type": "number",
+            "default": 30,
+            "minimum": 10
+        },
+        "debug": {
+            "title": "Debug Mode",
+            "type": "boolean",
+            "default": false
+        }
+    }
+}
