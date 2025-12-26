@@ -64,12 +64,18 @@ GarageDoorOpener.prototype = {
 
 
 getStatus: function(callback) {
+    // FORMATO EXACTO de tus curls que FUNCIONAN
     const statusData = { 
-        id: this.deviceId,      // ← Solo ID (sin channel/turn)
-        auth_key: this.authKey 
+        id: this.deviceId,
+        auth_key: this.authKey
+        // SIN channel - esto rompía Rincón/Mauleón
     };
     
-    request.post({ url: this.statusCloudURL, form: statusData }, (err, response, body) => {
+    request.post({ 
+        url: this.statusCloudURL, 
+        form: statusData,
+        timeout: 10000  // 10s timeout
+    }, (err, response, body) => {
         if (err) { 
             this.log("[%s] Connection error: %s", this.name, err.message);
             callback(null, false);
@@ -78,21 +84,25 @@ getStatus: function(callback) {
         
         try {
             const json = JSON.parse(body);
-            const cloudStatus = json?.data?.device_status?.cloud;
             
-            // ✅ Detecta TODAS las variantes de tus Shelly
-            const isCloudConnected = cloudStatus?.connected === true || 
-                                   cloudStatus?.enabled === true;
+            // DEBUG: Ver qué llega exactamente
+            const cloudData = json?.data?.device_status?.cloud;
+            this.log("[%s] Cloud data: %s", this.name, JSON.stringify(cloudData));
             
-            if (isCloudConnected) {
+            // ✅ Múltiples paths posibles
+            const isConnected = json?.data?.device_status?.cloud?.connected === true ||
+                               json?.data?.online === true ||
+                               json?.data?.device_status?.cloud?.enabled === true;
+            
+            if (isConnected) {
                 this.log("[%s] Shelly CLOUD CONNECTED ✓", this.name);
                 callback(null, true);
             } else {
-                this.log("[%s] CLOUD OFFLINE: %s", this.name, JSON.stringify(cloudStatus || 'no cloud data'));
+                this.log("[%s] CLOUD OFFLINE: %s", this.name, JSON.stringify(cloudData || 'missing'));
                 callback(null, false);
             }
         } catch (e) {
-            this.log("[%s] JSON error: %s", this.name, body.substring(0, 100));
+            this.log("[%s] JSON error. Body preview: %s", this.name, body.substring(0, 150));
             callback(null, false);
         }
     });
