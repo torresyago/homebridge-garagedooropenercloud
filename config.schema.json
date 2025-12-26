@@ -80,7 +80,8 @@
       "pollInterval": {
         "title": "Poll Interval",
         "type": "integer",
-        "default": 30,
+        "default": 120,
+        "minimum": 30,
         "description": "Seconds between status polls"
       },
       "debug": {

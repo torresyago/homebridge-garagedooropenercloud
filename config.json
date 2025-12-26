@@ -1,41 +1,41 @@
 {
-  "bridge": {
-    "name": "Homebridge",
-    "username": "CC:22:3D:E3:CE:30",
-    "port": 51826,
-    "pin": "031-45-154"
-  },
   "accessories": [
     {
       "accessory": "GarageDoorOpenerCloud",
-      "name": "Puerta Garaje",
-      "deviceId": "e84444ddddd44",
-      "authKey": "PON_AQUI_TU_AUTH_KEY",
-      "channel": "0",
-      "cloudBaseURL": "https://shelly-38-eu.shelly.cloud/device/relay/control",
-      "statusCloudURL": "https://shelly-38-eu.shelly.cloud/device/status",
-      "statusKey": "$.data.device_status.relays[0].ison",
-      "statusValueOpen": "false",
-      "statusValueClosed": "true",
-      "openTime": 10,
-      "closeTime": 10,
+      "name": "Garage Door Main",
+      "deviceId": "441793a44130",
+      "authKey": "TU_AUTH_KEY_AQUI",
+      "deviceType": "sensor",
+      "channel": 0,
+      "pollInterval": 120,
       "polling": true,
-      "pollInterval": 30,
-      "debug": false,
-      "manufacturer": "yago",
+      "manufacturer": "Shelly Cloud",
       "model": "GarageDoorOpenerCloud"
-    }
-  ],
-  "platforms": [
+    },
     {
-      "platform": "config",
-      "name": "Config",
-      "port": 8581,
-      "auth": "form",
-      "theme": "auto",
-      "log": {
-        "method": "native"
-      }
+      "accessory": "GarageDoorOpenerCloud",
+      "name": "Garage Door Side",
+      "deviceId": "441793a44db8",
+      "authKey": "TU_AUTH_KEY_AQUI",
+      "deviceType": "relay",
+      "channel": 0,
+      "pollInterval": 120,
+      "polling": true,
+      "manufacturer": "Shelly Cloud",
+      "model": "GarageDoorOpenerCloud"
+    },
+    {
+      "accessory": "GarageDoorOpenerCloud",
+      "name": "Workshop Door",
+      "deviceId": "e868e7d2b238",
+      "authKey": "TU_AUTH_KEY_AQUI", 
+      "deviceType": "sensor",
+      "channel": 0,
+      "pollInterval": 180,
+      "polling": true,
+      "manufacturer": "Shelly Cloud",
+      "model": "GarageDoorOpenerCloud"
     }
   ]
 }
+
