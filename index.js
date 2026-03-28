@@ -1,5 +1,6 @@
 var Service, Characteristic;
-const request = require("request");
+const https = require("https");
+const querystring = require("querystring");
 
 module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
@@ -56,15 +57,16 @@ GarageDoorOpener.prototype = {
             auth_key: this.authKey, 
             turn: "toggle" 
         };
-        request.post({ url: this.controlCloudURL, form: toggleData }, (err) => {
-            if (err) { 
-                this.log("[%s] Control error: %s", this.name, err.message); 
-                callback(err); 
-                return; 
-            }
+        const body = querystring.stringify(toggleData);
+        const url = new URL(this.controlCloudURL);
+        const options = { method: "POST", hostname: url.hostname, path: url.pathname, headers: { "Content-Type": "application/x-www-form-urlencoded", "Content-Length": Buffer.byteLength(body) } };
+        const req = https.request(options, () => {
             this.log("[%s] Toggle sent to Shelly", this.name);
             callback(null);
         });
+        req.on("error", (err) => { this.log("[%s] Control error: %s", this.name, err.message); callback(err); });
+        req.write(body);
+        req.end();
     },
 
     getCurrentState: function(callback) {
@@ -78,24 +80,26 @@ GarageDoorOpener.prototype = {
             id: this.deviceId, 
             auth_key: this.authKey 
         };
-        request.post({ 
-            url: this.statusCloudURL, 
-            form: statusData,
-            timeout: 10000
-        }, (err, response, body) => {
-            if (err) { 
-                callback(null, false); 
-                return; 
-            }
-            try {
-                const json = JSON.parse(body);
-                // Check PRECISO cloud.connected
-                const cloudConnected = json?.data?.device_status?.cloud?.connected === true;
-                callback(null, cloudConnected);
-            } catch (e) {
-                callback(null, false);
-            }
+        const body = querystring.stringify(statusData);
+        const url = new URL(this.statusCloudURL);
+        const options = { method: "POST", hostname: url.hostname, path: url.pathname, headers: { "Content-Type": "application/x-www-form-urlencoded", "Content-Length": Buffer.byteLength(body) }, timeout: 10000 };
+        const req = https.request(options, (res) => {
+            let data = "";
+            res.on("data", (chunk) => { data += chunk; });
+            res.on("end", () => {
+                try {
+                    const json = JSON.parse(data);
+                    const cloudConnected = json?.data?.device_status?.cloud?.connected === true;
+                    callback(null, cloudConnected);
+                } catch (e) {
+                    callback(null, false);
+                }
+            });
         });
+        req.on("error", () => { callback(null, false); });
+        req.on("timeout", () => { req.destroy(); callback(null, false); });
+        req.write(body);
+        req.end();
     },
 
     pollStatus: function() {

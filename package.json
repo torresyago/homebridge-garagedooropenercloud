@@ -30,7 +30,6 @@
   },
   "homepage": "https://github.com/yago/homebridge-garagedooropenercloud#readme",
   "dependencies": {
-    "jsonpath": "^1.0.2",
-    "request": "^2.88.2"
+    "jsonpath": "^1.0.2"
   }
 }
