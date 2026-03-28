@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.12] - 2026-03-28
+### Changed
+- Replaced deprecated `request` library with native Node.js `https` and `querystring` modules (no new dependencies)
+
 ## [1.2.20] - 2025-12-26
 ### Fixed
 - ✅ **Rate limiting fix**: Added random delay (0-30%) to polling requests to prevent `TOO_MANY_REQUESTS` errors from Shelly Cloud API
