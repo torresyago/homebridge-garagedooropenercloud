@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0] - 2026-04-01
+
+### Changed
+- Homebridge v2 compatible: replaced `.on('get', callback)` / `.on('set', callback)` with `.onGet()` / `.onSet()` API
+- Updated `engines` to `^1.6.0 || ^2.0.0-beta.0` with Node.js 18/20/22 requirement
+- Fixed `repository`, `bugs` and `homepage` URLs to `torresyago`
+- Added `homebridge.pluginAlias` field to `package.json` for Config UI X compatibility
+
 ## [1.3.12] - 2026-03-28
 ### Changed
 - Replaced deprecated `request` library with native Node.js `https` and `querystring` modules (no new dependencies)
