@@ -10,6 +10,14 @@ Todos los cambios relevantes de este proyecto se documentan aquí.
 
 ---
 
+## [1.4.2] - 2026-04-01
+
+### Fixed / Corregido
+- **EN** Removed unused `jsonpath` dependency which contained a high-severity CVE and used `eval()`.
+- **ES** Eliminada dependencia `jsonpath` no utilizada que contenía una CVE de alta gravedad y usaba `eval()`.
+
+---
+
 ## [1.4.1] - 2026-04-01
 
 ### Changed / Cambios
