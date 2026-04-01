@@ -10,6 +10,14 @@ Todos los cambios relevantes de este proyecto se documentan aquí.
 
 ---
 
+## [1.4.3] - 2026-04-01
+
+### Fixed / Corregido
+- **EN** Fixed README format: replaced malformed `text` labels with proper markdown code fences so npm displays the readme correctly.
+- **ES** Corregido formato del README: reemplazadas etiquetas `text` incorrectas por bloques de código markdown para que npm lo muestre correctamente.
+
+---
+
 ## [1.4.2] - 2026-04-01
 
 ### Fixed / Corregido
