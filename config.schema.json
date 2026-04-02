@@ -1,104 +1,91 @@
 {
   "pluginAlias": "GarageDoorOpenerCloud",
-  "pluginType": "accessory",
-  "singular": false,
+  "pluginType": "platform",
+  "singular": true,
   "schema": {
     "type": "object",
-    "required": ["name", "deviceId", "authKey"],
     "properties": {
       "name": {
-        "title": "Name",
+        "title": "Platform Name",
         "type": "string",
-        "description": "Name to appear in the Home app"
+        "default": "Garage Door Cloud"
       },
-      "deviceId": {
-        "title": "Shelly Device ID",
-        "type": "string",
-        "description": "Device ID from Shelly App → Settings → Cloud → Advanced"
-      },
-      "authKey": {
-        "title": "Shelly Auth Key",
-        "type": "string",
-        "description": "Auth Key from Shelly App → Profile"
-      },
-      "channel": {
-        "title": "Channel",
-        "type": "string",
-        "default": "0",
-        "description": "Relay channel (0 or 1)"
-      },
-      "cloudBaseURL": {
-        "title": "Cloud Control URL",
-        "type": "string",
-        "default": "https://shelly-38-eu.shelly.cloud/device/relay/control",
-        "description": "Shelly Cloud relay control endpoint"
-      },
-      "statusCloudURL": {
-        "title": "Cloud Status URL",
-        "type": "string",
-        "default": "https://shelly-38-eu.shelly.cloud/device/status",
-        "description": "Shelly Cloud status endpoint"
-      },
-      "statusKey": {
-        "title": "Status Key",
-        "type": "string",
-        "default": "$.data.device_status.relays[0].ison",
-        "description": "JSONPath for door sensor (input:0.state for Shelly)"
-      },
-      "statusValueOpen": {
-        "title": "Open Status Value",
-        "type": "string",
-        "default": "false",
-        "description": "Sensor value when door is OPEN"
-      },
-      "statusValueClosed": {
-        "title": "Closed Status Value",
-        "type": "string",
-        "default": "true",
-        "description": "Sensor value when door is CLOSED"
-      },
-      "openTime": {
-        "title": "Open Time",
-        "type": "integer",
-        "default": 10,
-        "description": "Seconds to simulate door opening"
-      },
-      "closeTime": {
-        "title": "Close Time",
-        "type": "integer",
-        "default": 10,
-        "description": "Seconds to simulate door closing"
-      },
-      "polling": {
-        "title": "Enable Polling",
-        "type": "boolean",
-        "default": true,
-        "description": "Poll real door state from Shelly Cloud"
-      },
-      "pollInterval": {
-        "title": "Poll Interval",
-        "type": "integer",
-        "default": 120,
-        "minimum": 30,
-        "description": "Seconds between status polls"
-      },
-      "debug": {
-        "title": "Debug Mode",
-        "type": "boolean",
-        "default": false,
-        "description": "Show detailed logs"
-      },
-      "manufacturer": {
-        "title": "Manufacturer",
-        "type": "string",
-        "default": "yago",
-        "description": "Manufacturer name in HomeKit"
-      },
-      "model": {
-        "title": "Model",
-        "type": "string",
-        "default": "GarageDoorOpenerCloud",
-        "description": "Model name in HomeKit"
+      "devices": {
+        "title": "Garage Doors",
+        "type": "array",
+        "items": {
+          "title": "Garage Door",
+          "type": "object",
+          "required": ["name", "deviceId", "authKey"],
+          "properties": {
+            "name": {
+              "title": "Name",
+              "type": "string",
+              "description": "Name to appear in the Home app"
+            },
+            "deviceId": {
+              "title": "Shelly Device ID",
+              "type": "string",
+              "description": "Device ID from Shelly App → Settings → Cloud → Advanced"
+            },
+            "authKey": {
+              "title": "Shelly Auth Key",
+              "type": "string",
+              "description": "Auth Key from Shelly App → Profile"
+            },
+            "channel": {
+              "title": "Channel",
+              "type": "string",
+              "default": "0",
+              "description": "Relay channel (0 or 1)"
+            },
+            "deviceType": {
+              "title": "Device Type",
+              "type": "string",
+              "default": "relay",
+              "oneOf": [
+                { "title": "Relay", "enum": ["relay"] },
+                { "title": "Sensor", "enum": ["sensor"] }
+              ]
+            },
+            "cloudBaseURL": {
+              "title": "Cloud Control URL",
+              "type": "string",
+              "default": "https://shelly-38-eu.shelly.cloud/device/relay/control",
+              "description": "Shelly Cloud relay control endpoint"
+            },
+            "statusCloudURL": {
+              "title": "Cloud Status URL",
+              "type": "string",
+              "default": "https://shelly-38-eu.shelly.cloud/device/status",
+              "description": "Shelly Cloud status endpoint"
+            },
+            "polling": {
+              "title": "Enable Polling",
+              "type": "boolean",
+              "default": true,
+              "description": "Poll real door state from Shelly Cloud"
+            },
+            "pollInterval": {
+              "title": "Poll Interval (seconds)",
+              "type": "integer",
+              "default": 120,
+              "minimum": 30,
+              "description": "Seconds between status polls"
+            },
+            "manufacturer": {
+              "title": "Manufacturer",
+              "type": "string",
+              "default": "Shelly Cloud",
+              "description": "Manufacturer name in HomeKit"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string",
+              "description": "Model name in HomeKit"
+            }
+          }
+        }
       }
     }
   }

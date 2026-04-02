@@ -1,127 +1,178 @@
 'use strict';
 
-const https = require('https');
-const querystring = require('querystring');
+const PLUGIN_NAME   = 'homebridge-garagedooropenercloud';
+const PLATFORM_NAME = 'GarageDoorOpenerCloud';
 
-var Service, Characteristic;
-
-module.exports = function(homebridge) {
-    Service = homebridge.hap.Service;
-    Characteristic = homebridge.hap.Characteristic;
-    homebridge.registerAccessory('homebridge-garagedooropenercloud', 'GarageDoorOpenerCloud', GarageDoorOpener);
+module.exports = (api) => {
+  api.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, GarageDoorOpenerCloudPlatform);
 };
 
-function GarageDoorOpener(log, config) {
-    this.log = log;
-    this.name = config.name;
-    this.deviceId = config.deviceId;
-    this.authKey = config.authKey;
-    this.channel = config.channel || 0;
-    this.deviceType = config.deviceType || 'relay';
-    this.pollInterval = config.pollInterval || 120;
-    this.polling = config.polling !== false;
+class GarageDoorOpenerCloudPlatform {
+  constructor(log, config, api) {
+    this.log         = log;
+    this.config      = config;
+    this.api         = api;
+    this.accessories = new Map(); // uuid → PlatformAccessory
 
-    this.statusCloudURL = config.statusCloudURL || 'https://shelly-38-eu.shelly.cloud/device/status';
-    this.controlCloudURL = config.cloudBaseURL || 'https://shelly-38-eu.shelly.cloud/device/relay/control';
+    if (!config) return;
 
-    this.service = new Service.GarageDoorOpener(this.name);
-    this.informationService = new Service.AccessoryInformation();
+    api.on('didFinishLaunching', () => {
+      this._discoverDevices();
+    });
+  }
 
-    this.informationService
-        .setCharacteristic(Characteristic.Manufacturer, config.manufacturer || 'Shelly Cloud')
-        .setCharacteristic(Characteristic.Model, config.model || this.deviceType.toUpperCase())
-        .setCharacteristic(Characteristic.SerialNumber, this.deviceId);
+  configureAccessory(accessory) {
+    this.accessories.set(accessory.UUID, accessory);
+  }
 
-    this.service.getCharacteristic(Characteristic.TargetDoorState)
-        .onSet(this.setTargetState.bind(this));
+  _discoverDevices() {
+    let devices = this.config.devices || [];
 
-    this.service.getCharacteristic(Characteristic.CurrentDoorState)
-        .onGet(() => Characteristic.CurrentDoorState.CLOSED);
-
-    this.service.getCharacteristic(Characteristic.CurrentDoorState).setValue(Characteristic.CurrentDoorState.CLOSED);
-    this.service.getCharacteristic(Characteristic.TargetDoorState).setValue(Characteristic.CurrentDoorState.CLOSED);
-
-    if (this.polling) {
-        setInterval(this.pollStatus.bind(this), this.pollInterval * 1000);
-        this.pollStatus();
+    // Legacy compatibility: single accessory-style config at platform level
+    if (devices.length === 0 && this.config.deviceId && this.config.authKey) {
+      this.log.warn(`[${PLATFORM_NAME}] Legacy config detected. Please migrate to the new format with a "devices" array. See README for instructions.`);
+      devices = [{
+        name:           this.config.name || 'Garage Door',
+        deviceId:       this.config.deviceId,
+        authKey:        this.config.authKey,
+        channel:        this.config.channel,
+        deviceType:     this.config.deviceType,
+        pollInterval:   this.config.pollInterval,
+        polling:        this.config.polling,
+        statusCloudURL: this.config.statusCloudURL,
+        cloudBaseURL:   this.config.cloudBaseURL,
+        manufacturer:   this.config.manufacturer,
+        model:          this.config.model,
+      }];
     }
 
-    this.log('[%s] Initializing %s accessory... (CLOSED, poll: %ds)', this.name, this.deviceType, this.pollInterval);
+    const configuredUUIDs = new Set();
+
+    for (const deviceConfig of devices) {
+      if (!deviceConfig.name || !deviceConfig.deviceId || !deviceConfig.authKey) {
+        this.log.warn(`[${PLATFORM_NAME}] Skipping device with missing required fields: ${deviceConfig.name || '(unnamed)'}`);
+        continue;
+      }
+
+      const uuid = this.api.hap.uuid.generate(deviceConfig.name + deviceConfig.deviceId);
+      configuredUUIDs.add(uuid);
+
+      let accessory = this.accessories.get(uuid);
+      if (accessory) {
+        this.log.info(`[${deviceConfig.name}] Restoring cached accessory`);
+      } else {
+        this.log.info(`[${deviceConfig.name}] Adding new accessory`);
+        accessory = new this.api.platformAccessory(deviceConfig.name, uuid);
+        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        this.accessories.set(uuid, accessory);
+      }
+
+      new GarageDoorHandler(this.log, deviceConfig, accessory, this.api.hap);
+    }
+
+    // Remove accessories no longer in config
+    for (const [uuid, accessory] of this.accessories) {
+      if (!configuredUUIDs.has(uuid)) {
+        this.log.info(`[${accessory.displayName}] Removing stale accessory`);
+        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        this.accessories.delete(uuid);
+      }
+    }
+  }
 }
 
-GarageDoorOpener.prototype = {
-    getServices: function() {
-        return [this.informationService, this.service];
-    },
+class GarageDoorHandler {
+  constructor(log, config, accessory, hap) {
+    this.log            = log;
+    this.accessory      = accessory;
+    this.hap            = hap;
+    this.name           = config.name;
+    this.deviceId       = config.deviceId;
+    this.authKey        = config.authKey;
+    this.channel        = config.channel        || 0;
+    this.deviceType     = config.deviceType     || 'relay';
+    this.pollInterval   = config.pollInterval   || 120;
+    this.polling        = config.polling        !== false;
+    this.statusCloudURL = config.statusCloudURL || 'https://shelly-38-eu.shelly.cloud/device/status';
+    this.controlCloudURL = config.cloudBaseURL  || 'https://shelly-38-eu.shelly.cloud/device/relay/control';
 
-    setTargetState: function(targetState) {
-        this.log('[%s] Target: %s', this.name, targetState === 0 ? 'OPEN' : 'CLOSE');
-        const toggleData = {
-            id: this.deviceId,
-            channel: this.channel,
-            auth_key: this.authKey,
-            turn: 'toggle',
-        };
-        const body = querystring.stringify(toggleData);
-        const url = new URL(this.controlCloudURL);
-        const options = {
-            method: 'POST',
-            hostname: url.hostname,
-            path: url.pathname,
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': Buffer.byteLength(body),
-            },
-        };
-        const req = https.request(options, () => {
-            this.log('[%s] Toggle sent to Shelly', this.name);
-        });
-        req.on('error', (err) => { this.log('[%s] Control error: %s', this.name, err.message); });
-        req.write(body);
-        req.end();
-    },
+    const { Service, Characteristic } = hap;
 
-    getStatus: function(callback) {
-        const statusData = { id: this.deviceId, auth_key: this.authKey };
-        const body = querystring.stringify(statusData);
-        const url = new URL(this.statusCloudURL);
-        const options = {
-            method: 'POST',
-            hostname: url.hostname,
-            path: url.pathname,
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': Buffer.byteLength(body),
-            },
-            timeout: 10000,
-        };
-        const req = https.request(options, (res) => {
-            let data = '';
-            res.on('data', (chunk) => { data += chunk; });
-            res.on('end', () => {
-                try {
-                    const json = JSON.parse(data);
-                    callback(null, json?.data?.device_status?.cloud?.connected === true);
-                } catch (e) {
-                    callback(null, false);
-                }
-            });
-        });
-        req.on('error', () => { callback(null, false); });
-        req.on('timeout', () => { req.destroy(); callback(null, false); });
-        req.write(body);
-        req.end();
-    },
+    accessory.getService(Service.AccessoryInformation)
+      .setCharacteristic(Characteristic.Manufacturer, config.manufacturer || 'Shelly Cloud')
+      .setCharacteristic(Characteristic.Model,        config.model        || this.deviceType.toUpperCase())
+      .setCharacteristic(Characteristic.SerialNumber,  this.deviceId);
 
-    pollStatus: function() {
-        const randomDelay = Math.floor(Math.random() * 0.3 * this.pollInterval * 1000);
-        setTimeout(() => {
-            this.getStatus((err, isOnline) => {
-                const closed = Characteristic.CurrentDoorState.CLOSED;
-                this.service.getCharacteristic(Characteristic.CurrentDoorState).updateValue(closed);
-                this.service.getCharacteristic(Characteristic.TargetDoorState).updateValue(closed);
-                this.log('[%s] Poll: %s - CLOSED (next: %ds)', this.name, isOnline ? 'ONLINE' : 'OFFLINE', this.pollInterval);
-            });
-        }, randomDelay);
-    },
-};
+    this.service = accessory.getService(Service.GarageDoorOpener)
+      || accessory.addService(Service.GarageDoorOpener, this.name);
+
+    this.service.getCharacteristic(Characteristic.TargetDoorState)
+      .onSet((value) => this._setTargetState(value));
+
+    this.service.getCharacteristic(Characteristic.CurrentDoorState)
+      .onGet(() => Characteristic.CurrentDoorState.CLOSED);
+
+    this.service.updateCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.CLOSED);
+    this.service.updateCharacteristic(Characteristic.TargetDoorState,  Characteristic.TargetDoorState.CLOSED);
+
+    this.log.info(`[${this.name}] Initialized (${this.deviceType}, poll: ${this.pollInterval}s)`);
+
+    if (this.polling) {
+      this._pollStatus();
+      setInterval(() => this._pollStatus(), this.pollInterval * 1000);
+    }
+  }
+
+  async _setTargetState(targetState) {
+    const { Characteristic } = this.hap;
+    this.log.info(`[${this.name}] Target: ${targetState === Characteristic.TargetDoorState.OPEN ? 'OPEN' : 'CLOSE'}`);
+
+    try {
+      const body = new URLSearchParams({
+        id:       this.deviceId,
+        channel:  this.channel,
+        auth_key: this.authKey,
+        turn:     'toggle',
+      });
+      const res = await fetch(this.controlCloudURL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body:    body.toString(),
+      });
+      this.log.info(`[${this.name}] Toggle → ${res.ok ? 'OK' : res.status}`);
+    } catch (e) {
+      this.log.error(`[${this.name}] Control error: ${e.message}`);
+    }
+  }
+
+  async _getStatus() {
+    try {
+      const body = new URLSearchParams({ id: this.deviceId, auth_key: this.authKey });
+      const res  = await fetch(this.statusCloudURL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body:    body.toString(),
+        signal:  AbortSignal.timeout(10000),
+      });
+      if (!res.ok) return false;
+      const json = await res.json();
+      return json?.data?.device_status?.cloud?.connected === true;
+    } catch (e) {
+      this.log.error(`[${this.name}] Status error: ${e.message}`);
+      return false;
+    }
+  }
+
+  async _pollStatus() {
+    const { Characteristic } = this.hap;
+    const randomDelay = Math.floor(Math.random() * 0.3 * this.pollInterval * 1000);
+
+    setTimeout(async () => {
+      const isOnline = await this._getStatus();
+      const closed   = Characteristic.CurrentDoorState.CLOSED;
+      this.service.updateCharacteristic(Characteristic.CurrentDoorState, closed);
+      this.service.updateCharacteristic(Characteristic.TargetDoorState,  closed);
+      this.log.info(`[${this.name}] Poll: ${isOnline ? 'ONLINE' : 'OFFLINE'} - CLOSED (next: ${this.pollInterval}s)`);
+    }, randomDelay);
+  }
+}

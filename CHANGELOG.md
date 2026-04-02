@@ -10,6 +10,24 @@ Todos los cambios relevantes de este proyecto se documentan aquí.
 
 ---
 
+## [2.0.0] - 2026-04-02
+
+### ⚠️ Breaking change / Cambio importante
+
+- **EN** Converted to **dynamic platform** (`pluginType: platform`). Devices are now declared under a `devices` array inside the platform block. See README for migration guide.
+- **ES** Convertido a **dynamic platform** (`pluginType: platform`). Los dispositivos se declaran ahora bajo un array `devices` dentro del bloque de plataforma. Ver README para guía de migración.
+
+### Changed / Cambios
+
+- **EN** Replaced `registerAccessory` with `registerPlatform`. Supports multiple devices in a single platform block.
+- **EN** Replaced legacy `https` + `querystring` modules with native `fetch` (Node.js 18+).
+- **EN** Backward-compatible config shim: old single-device config at platform level continues to work with a migration warning in the log.
+- **ES** Reemplazado `registerAccessory` por `registerPlatform`. Soporta múltiples dispositivos en un único bloque de plataforma.
+- **ES** Reemplazados los módulos `https` y `querystring` por `fetch` nativo (Node.js 18+).
+- **ES** Compatibilidad con config antigua: la config de un solo dispositivo a nivel de plataforma sigue funcionando con un aviso de migración en el log.
+
+---
+
 ## [1.4.5] - 2026-04-01
 
 ### Fixed / Corregido

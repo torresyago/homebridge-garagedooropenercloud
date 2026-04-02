@@ -9,6 +9,66 @@ Compatible with **Shelly Gen1, Plus, and Pro** — works with both relay and sen
 
 ---
 
+## Migrating from v1.x / Migración desde v1.x
+
+From v2.0.0 the plugin is a **dynamic platform**. Move your config from `accessories` to `platforms`.
+
+Desde v2.0.0 el plugin es una **dynamic platform**. Mueve la config del bloque `accessories` a `platforms`.
+
+**Before / Antes:**
+```json
+"accessories": [
+  {
+    "accessory": "GarageDoorOpenerCloud",
+    "name": "Garage East",
+    "deviceId": "441793a44130",
+    "authKey": "YOUR_AUTH_KEY",
+    "deviceType": "sensor",
+    "pollInterval": 120
+  },
+  {
+    "accessory": "GarageDoorOpenerCloud",
+    "name": "Garage West",
+    "deviceId": "441793a44131",
+    "authKey": "YOUR_AUTH_KEY",
+    "deviceType": "relay",
+    "pollInterval": 120
+  }
+]
+```
+
+**After / Después:**
+```json
+"platforms": [
+  {
+    "platform": "GarageDoorOpenerCloud",
+    "name": "Garage Door Cloud",
+    "devices": [
+      {
+        "name": "Garage East",
+        "deviceId": "441793a44130",
+        "authKey": "YOUR_AUTH_KEY",
+        "deviceType": "sensor",
+        "pollInterval": 120
+      },
+      {
+        "name": "Garage West",
+        "deviceId": "441793a44131",
+        "authKey": "YOUR_AUTH_KEY",
+        "deviceType": "relay",
+        "pollInterval": 120
+      }
+    ]
+  }
+]
+```
+
+> **Note:** If you update without changing your config, the plugin will continue to work and log a warning asking you to migrate.
+>
+> **Nota:** Si actualizas sin cambiar la config, el plugin seguirá funcionando y mostrará un aviso en el log pidiendo que migres.
+
+---
+
 ## English
 
 ### Features
