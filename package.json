@@ -1,6 +1,6 @@
 {
   "name": "homebridge-garagedooropenercloud",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Homebridge plugin for garage door opener using Shelly Cloud API",
   "main": "index.js",
   "engines": {
