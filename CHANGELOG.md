@@ -10,6 +10,14 @@ Todos los cambios relevantes de este proyecto se documentan aquí.
 
 ---
 
+## [2.0.4] - 2026-04-02
+
+### Changed / Cambios
+- **EN** README: added section explaining how to find the Shelly Device ID (via cloud UI or physical sticker).
+- **ES** README: añadida sección explicando cómo obtener el Device ID del Shelly (desde la UI cloud o la pegatina física del dispositivo).
+
+---
+
 ## [2.0.3] - 2026-04-02
 
 ### Added / Añadido

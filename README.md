@@ -87,6 +87,16 @@ Each Shelly account is assigned to a specific regional cloud server. You need to
 
 Copy only the base URL (without any path). Set it as `shellyServer` in the platform config.
 
+### Finding your Shelly Device ID
+
+1. Open [control.shelly.cloud](https://control.shelly.cloud) in your browser
+2. Click on your device to open its detail page
+3. Click the **Settings** (gear) icon
+4. Go to **Device information**
+5. The **Device ID** is shown there — e.g. `441793a44130`
+
+Alternatively, the Device ID is usually printed on a sticker on the physical device (it is the last part of the default device name, e.g. `shellyplus1-441793a44130`).
+
 ### Features
 
 - Always starts **closed** (safe default)
@@ -176,6 +186,16 @@ Cada cuenta Shelly está asignada a un servidor cloud regional específico. Debe
 4. Tu URL de servidor aparece ahí — p.ej. `https://shelly-38-eu.shelly.cloud`
 
 Copia solo la URL base (sin ruta). Ponla como `shellyServer` en la config de la plataforma.
+
+### Cómo encontrar el Device ID de tu Shelly
+
+1. Abre [control.shelly.cloud](https://control.shelly.cloud) en el navegador
+2. Haz clic en tu dispositivo para abrir su página de detalle
+3. Haz clic en el icono de **Ajustes** (engranaje)
+4. Ve a **Información del dispositivo**
+5. El **Device ID** aparece ahí — p.ej. `441793a44130`
+
+Alternativamente, el Device ID suele estar impreso en una pegatina en el propio dispositivo físico (es la última parte del nombre por defecto, p.ej. `shellyplus1-441793a44130`).
 
 ### Características
 
