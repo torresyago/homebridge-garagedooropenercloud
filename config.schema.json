@@ -4,23 +4,21 @@
   "singular": false,
   "schema": {
     "type": "object",
+    "required": ["name", "deviceId", "authKey"],
     "properties": {
       "name": {
         "title": "Name",
         "type": "string",
-        "required": true,
         "description": "Name to appear in the Home app"
       },
       "deviceId": {
         "title": "Shelly Device ID",
         "type": "string",
-        "required": true,
         "description": "Device ID from Shelly App → Settings → Cloud → Advanced"
       },
       "authKey": {
         "title": "Shelly Auth Key",
         "type": "string",
-        "required": true,
         "description": "Auth Key from Shelly App → Profile"
       },
       "channel": {
@@ -44,7 +42,7 @@
       "statusKey": {
         "title": "Status Key",
         "type": "string",
-        "default": "$.data.device_status.relays[0].ison",       
+        "default": "$.data.device_status.relays[0].ison",
         "description": "JSONPath for door sensor (input:0.state for Shelly)"
       },
       "statusValueOpen": {
@@ -105,4 +103,3 @@
     }
   }
 }
-
