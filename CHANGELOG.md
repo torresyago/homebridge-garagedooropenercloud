@@ -10,6 +10,18 @@ Todos los cambios relevantes de este proyecto se documentan aquí.
 
 ---
 
+## [2.0.3] - 2026-04-02
+
+### Added / Añadido
+- **EN** New `shellyServer` field at platform level: set your Shelly Cloud server URL once and it applies to all devices. Find it in Shelly app → Settings → User Settings → Authorization cloud key → Server (e.g. `https://shelly-38-eu.shelly.cloud`).
+- **EN** `shellyServer` can also be set per device to override the platform default.
+- **EN** README: added section explaining how to find the Shelly Cloud server URL.
+- **ES** Nuevo campo `shellyServer` a nivel de plataforma: configura la URL de tu servidor Shelly Cloud una sola vez y se aplica a todos los dispositivos. Encuéntrala en Shelly app → Ajustes → Ajustes de usuario → Clave de autorización en la nube → Server (p.ej. `https://shelly-38-eu.shelly.cloud`).
+- **ES** `shellyServer` también puede configurarse por dispositivo para sobreescribir el valor de la plataforma.
+- **ES** README: añadida sección explicando cómo encontrar la URL del servidor Shelly Cloud.
+
+---
+
 ## [2.0.2] - 2026-04-02
 
 ### Changed / Cambios

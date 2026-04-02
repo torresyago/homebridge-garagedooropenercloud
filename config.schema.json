@@ -10,6 +10,12 @@
         "type": "string",
         "default": "Garage Door Cloud"
       },
+      "shellyServer": {
+        "title": "Shelly Cloud Server (default for all devices)",
+        "type": "string",
+        "placeholder": "https://shelly-38-eu.shelly.cloud",
+        "description": "Your Shelly Cloud server URL. Find it in Shelly app → Settings → User Settings → Authorization cloud key → Server. Can be overridden per device."
+      },
       "devices": {
         "title": "Garage Doors",
         "type": "array",
@@ -32,6 +38,12 @@
               "title": "Shelly Auth Key",
               "type": "string",
               "description": "Auth Key from Shelly App → Profile"
+            },
+            "shellyServer": {
+              "title": "Shelly Cloud Server (override)",
+              "type": "string",
+              "placeholder": "https://shelly-38-eu.shelly.cloud",
+              "description": "Leave empty to use the platform-level server. Only set this if this device uses a different Shelly Cloud server."
             },
             "channel": {
               "title": "Channel",

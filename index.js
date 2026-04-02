@@ -39,11 +39,18 @@ class GarageDoorOpenerCloudPlatform {
         deviceType:     this.config.deviceType,
         pollInterval:   this.config.pollInterval,
         polling:        this.config.polling,
+        shellyServer:   this.config.shellyServer,
         statusCloudURL: this.config.statusCloudURL,
         cloudBaseURL:   this.config.cloudBaseURL,
         manufacturer:   this.config.manufacturer,
         model:          this.config.model,
       }];
+    }
+
+    // Propagate platform-level shellyServer to devices that don't override it
+    const platformServer = this.config.shellyServer;
+    if (platformServer) {
+      devices = devices.map(d => ({ shellyServer: platformServer, ...d }));
     }
 
     const configuredUUIDs = new Set();
@@ -93,8 +100,9 @@ class GarageDoorHandler {
     this.deviceType     = config.deviceType     || 'relay';
     this.pollInterval   = config.pollInterval   || 120;
     this.polling        = config.polling        !== false;
-    this.statusCloudURL = config.statusCloudURL || 'https://shelly-38-eu.shelly.cloud/device/status';
-    this.controlCloudURL = config.cloudBaseURL  || 'https://shelly-38-eu.shelly.cloud/device/relay/control';
+    const base           = (config.shellyServer || 'https://shelly-38-eu.shelly.cloud').replace(/\/$/, '');
+    this.statusCloudURL  = config.statusCloudURL  || `${base}/device/status`;
+    this.controlCloudURL = config.cloudBaseURL    || `${base}/device/relay/control`;
 
     const { Service, Characteristic } = hap;
 

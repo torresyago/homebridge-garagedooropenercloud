@@ -76,6 +76,17 @@ Desde v2.0.0 el plugin es una **dynamic platform**. Mueve la config del bloque `
 
 ## English
 
+### Finding your Shelly Cloud server URL
+
+Each Shelly account is assigned to a specific regional cloud server. You need to set this URL in the plugin config so it connects to the right server.
+
+1. Open [control.shelly.cloud](https://control.shelly.cloud) in your browser (or the Shelly app)
+2. Go to **Settings → User Settings**
+3. Scroll down to **Authorization cloud key**
+4. Your server URL is shown there — e.g. `https://shelly-38-eu.shelly.cloud`
+
+Copy only the base URL (without any path). Set it as `shellyServer` in the platform config.
+
 ### Features
 
 - Always starts **closed** (safe default)
@@ -106,27 +117,43 @@ docker restart homebridge
 ### Manual config.json
 
 ```json
-{
-  "accessory": "GarageDoorOpenerCloud",
-  "name": "Garage East",
-  "deviceId": "441793a44130",
-  "authKey": "YOUR_SHELLY_CLOUD_AUTH_KEY",
-  "deviceType": "sensor",
-  "channel": 0,
-  "pollInterval": 120,
-  "polling": true
-}
+"platforms": [
+  {
+    "platform": "GarageDoorOpenerCloud",
+    "name": "Garage Door Cloud",
+    "shellyServer": "https://shelly-38-eu.shelly.cloud",
+    "devices": [
+      {
+        "name": "Garage East",
+        "deviceId": "441793a44130",
+        "authKey": "YOUR_SHELLY_CLOUD_AUTH_KEY",
+        "deviceType": "sensor",
+        "channel": 0,
+        "pollInterval": 120,
+        "polling": true
+      },
+      {
+        "name": "Garage West",
+        "deviceId": "441793a44131",
+        "authKey": "YOUR_SHELLY_CLOUD_AUTH_KEY",
+        "deviceType": "relay",
+        "pollInterval": 120
+      }
+    ]
+  }
+]
 ```
 
-| Field | Description |
-|-------|-------------|
-| **accessory** | Always `GarageDoorOpenerCloud` |
-| **name** | Display name in HomeKit |
-| **deviceId** | Shelly device ID |
-| **authKey** | Shelly Cloud authentication key |
-| **deviceType** | `relay` or `sensor` |
-| **pollInterval** | Poll interval in seconds (default: 120) |
-| **polling** | Enable/disable polling |
+| Field | Level | Description |
+|-------|-------|-------------|
+| **shellyServer** | platform | Your Shelly Cloud server URL (see above). Applied to all devices. |
+| **name** | device | Display name in HomeKit |
+| **deviceId** | device | Shelly device ID |
+| **authKey** | device | Shelly Cloud authentication key |
+| **deviceType** | device | `relay` or `sensor` |
+| **pollInterval** | device | Poll interval in seconds (default: 120) |
+| **polling** | device | Enable/disable polling (default: true) |
+| **shellyServer** | device | Override the server URL for this specific device only |
 
 ### How it works
 
@@ -138,6 +165,17 @@ docker restart homebridge
 ---
 
 ## Español
+
+### Cómo encontrar la URL de tu servidor Shelly Cloud
+
+Cada cuenta Shelly está asignada a un servidor cloud regional específico. Debes configurar esta URL en el plugin para que se conecte al servidor correcto.
+
+1. Abre [control.shelly.cloud](https://control.shelly.cloud) en el navegador (o la app Shelly)
+2. Ve a **Ajustes → Ajustes de usuario**
+3. Baja hasta **Clave de autorización en la nube**
+4. Tu URL de servidor aparece ahí — p.ej. `https://shelly-38-eu.shelly.cloud`
+
+Copia solo la URL base (sin ruta). Ponla como `shellyServer` en la config de la plataforma.
 
 ### Características
 
@@ -169,16 +207,24 @@ docker restart homebridge
 ### config.json manual
 
 ```json
-{
-  "accessory": "GarageDoorOpenerCloud",
-  "name": "Mauleón",
-  "deviceId": "441793a44130",
-  "authKey": "TU_CLAVE_SHELLY_CLOUD",
-  "deviceType": "sensor",
-  "channel": 0,
-  "pollInterval": 120,
-  "polling": true
-}
+"platforms": [
+  {
+    "platform": "GarageDoorOpenerCloud",
+    "name": "Garage Door Cloud",
+    "shellyServer": "https://shelly-38-eu.shelly.cloud",
+    "devices": [
+      {
+        "name": "Garaje",
+        "deviceId": "441793a44130",
+        "authKey": "TU_CLAVE_SHELLY_CLOUD",
+        "deviceType": "sensor",
+        "channel": 0,
+        "pollInterval": 120,
+        "polling": true
+      }
+    ]
+  }
+]
 ```
 
 ### Cómo funciona
