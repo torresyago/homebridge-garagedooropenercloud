@@ -10,6 +10,14 @@ Todos los cambios relevantes de este proyecto se documentan aquí.
 
 ---
 
+## [2.0.5] - 2026-04-02
+
+### Changed / Cambios
+- **EN** README: added explicit warning that the plugin must be configured under `platforms` using `"platform"` — not `"accessory"` — to avoid silent load failure.
+- **ES** README: añadida advertencia explícita de que el plugin debe configurarse en `platforms` usando `"platform"` y no `"accessory"`, para evitar que se cargue silenciosamente sin mostrar nada.
+
+---
+
 ## [2.0.4] - 2026-04-02
 
 ### Changed / Cambios

@@ -126,6 +126,8 @@ docker restart homebridge
 
 ### Manual config.json
 
+> ⚠️ **Important:** This plugin must be added under the `"platforms"` block in `config.json`, using `"platform": "GarageDoorOpenerCloud"`. Using `"accessory"` instead of `"platform"` will cause the plugin to be silently ignored — no devices will appear and no logs will be shown.
+
 ```json
 "platforms": [
   {
@@ -225,6 +227,8 @@ docker restart homebridge
 2. Rellena los campos y haz clic en **Guardar**
 
 ### config.json manual
+
+> ⚠️ **Importante:** Este plugin debe añadirse en el bloque `"platforms"` del `config.json`, usando `"platform": "GarageDoorOpenerCloud"`. Si usas `"accessory"` en lugar de `"platform"`, Homebridge ignorará el plugin silenciosamente — no aparecerá ningún dispositivo ni ningún log.
 
 ```json
 "platforms": [
